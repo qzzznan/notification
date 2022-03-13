@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/qzzznan/notification/bark"
@@ -27,6 +28,9 @@ func main() {
 	}
 
 	e := gin.Default()
+	e.Use(gin.Recovery())
+	e.Use(ginBodyLogMiddleware)
+
 	pushdeer.InitDerHandler(e)
 
 	addr := fmt.Sprintf("%s:%s",
@@ -38,4 +42,21 @@ func main() {
 	if err = e.Run(addr); err != nil {
 		log.Fatalln(err)
 	}
+}
+
+type bodyLogWriter struct {
+	gin.ResponseWriter
+	body *bytes.Buffer
+}
+
+func (w bodyLogWriter) Write(b []byte) (int, error) {
+	w.body.Write(b)
+	return w.ResponseWriter.Write(b)
+}
+
+func ginBodyLogMiddleware(c *gin.Context) {
+	blw := &bodyLogWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
+	c.Writer = blw
+	c.Next()
+	fmt.Println("Response body: " + blw.body.String())
 }

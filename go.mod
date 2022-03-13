@@ -4,10 +4,14 @@ go 1.18
 
 require (
 	github.com/gin-gonic/gin v1.7.7
+	github.com/huandu/go-sqlbuilder v1.13.0
+	github.com/mattn/go-sqlite3 v1.14.12
 	github.com/samber/lo v1.10.0
+	github.com/satori/go.uuid v1.2.0
 	github.com/sideshow/apns2 v0.20.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.10.1
+	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
 )
 
 require (
@@ -19,6 +23,7 @@ require (
 	github.com/go-playground/validator/v10 v10.10.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect

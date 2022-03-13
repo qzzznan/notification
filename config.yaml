@@ -1,0 +1,7 @@
+port: 8080
+
+pushdeer:
+  topic: "com.pushdeer.self.ios"
+  key_id: "66M7BD2GCV"
+  team_id: "HUJ6HAE4VU"
+  key_passwd: "64wtMhU4mULj"
