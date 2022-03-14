@@ -5,9 +5,7 @@ import "time"
 type User struct {
 	ID       int64
 	UUID     string
-	Name     string
-	Email    string
-	AppleID  string
+	IDToken  string
 	CreateAt time.Time
 	UpdateAt time.Time
 }

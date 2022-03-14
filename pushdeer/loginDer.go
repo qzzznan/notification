@@ -2,7 +2,7 @@ package pushdeer
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/qzzznan/notification/db"
+	"github.com/qzzznan/notification/util"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 )
@@ -22,8 +22,9 @@ func apple(c *gin.Context) {
 
 	var userToken string
 
-	user := db.GetUserInfo()
-	userToken = user.UUID
+	userToken = util.GenToken(token)
+
+	log.Infoln("apple userToken:", userToken)
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0, "content": gin.H{
