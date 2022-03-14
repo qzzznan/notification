@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-func TestSQLiteDB(t *testing.T) {
-	db := SQLiteDB{}
+func TestPGDB(t *testing.T) {
+	db := PostgresDB{}
 	err := db.Init(context.Background())
 	if err != nil {
 		t.Fatal(err)
