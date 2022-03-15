@@ -9,6 +9,7 @@ import (
 	"github.com/qzzznan/notification/pushdeer"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"io/ioutil"
 )
 
 func init() {
@@ -35,6 +36,7 @@ func main() {
 
 	e := gin.Default()
 	//e.Use(gin.Recovery())
+	e.Use(ginReqLogMiddleware)
 	e.Use(ginBodyLogMiddleware)
 
 	pushdeer.InitDerHandler(e)
@@ -64,5 +66,18 @@ func ginBodyLogMiddleware(c *gin.Context) {
 	blw := &bodyLogWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
 	c.Writer = blw
 	c.Next()
-	fmt.Println("Response body: " + blw.body.String())
+	log.Debugln("Response body: " + blw.body.String())
+}
+
+func ginReqLogMiddleware(c *gin.Context) {
+	defer c.Next()
+
+	data, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		return
+	}
+	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+	log.Debugln("Request Header:", c.Request.Header)
+	log.Debugln("Request URL:", c.Request.RequestURI)
+	log.Debugln("Request Body:", string(data))
 }
