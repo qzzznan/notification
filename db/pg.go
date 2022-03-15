@@ -5,104 +5,133 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/huandu/go-sqlbuilder"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 	"os"
 )
 
-type PostgresDB struct {
-	ctx context.Context
-	*sql.DB
-	sqlbuilder.Flavor
-}
+var db *sqlx.DB
 
-func (s *PostgresDB) Init(ctx context.Context) (err error) {
-	s.Flavor = sqlbuilder.PostgreSQL
-	s.ctx = ctx
-
+func InitPostgresDB() error {
 	dsn := fmt.Sprintf("postgres://postgres:%s@%s/postgres?sslmode=disable",
 		os.Getenv("PG_PWD"),
 		os.Getenv("PG_URL"))
-
 	log.Infoln("Connecting to Postgres:", dsn)
-
-	s.DB, err = sql.Open("postgres", dsn)
-	if err != nil {
-		return
-	}
-
-	return s.checkTables()
-}
-
-func (s *PostgresDB) checkTables() error {
-	err := s.createTokenTable()
-	if err != nil {
-		return fmt.Errorf("create token table %v", err)
-	}
-	return nil
-}
-
-func (s *PostgresDB) createTokenTable() error {
-	cre := s.NewCreateTableBuilder().CreateTable(TokenTable)
-	cre.IfNotExists()
-	cre.Define("user_token", "varchar(128)", "NOT NULL", "PRIMARY KEY")
-	cre.Define("login_token", "varchar(512)", "NOT NULL")
-	str, args := cre.Build()
-	log.Infoln("create table:", str, args)
-	_, err := s.ExecContext(s.ctx, str, args...)
-	return err
-}
-
-func (s *PostgresDB) SaveLoginToken(userToken, loginToken string) error {
-	ins := s.NewInsertBuilder().InsertInto(TokenTable)
-	ins.Cols("user_token", "login_token")
-	ins.Values(userToken, loginToken)
-	str, args := ins.Build()
-
-	log.Infoln("insert sql:", str, args)
-
-	_, err := s.ExecContext(s.ctx, str, args...)
+	db1, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return err
 	}
+
+	db = sqlx.NewDb(db1, "postgres")
+
+	ctx := context.Background()
+	for _, v := range TableCreateMap {
+		err = v(ctx, db1)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-func (s *PostgresDB) GetLoginToken(userToken string) (string, error) {
-	sel := s.NewSelectBuilder().Select("login_token")
-	sel.From(TokenTable)
-	sel.Where(sel.Equal("user_token", userToken))
-	str, args := sel.Build()
+const (
+	UserTable    = "t_user"
+	DeviceTable  = "t_device"
+	PushKeyTable = "t_push_key"
+	MessageTable = "t_message"
+)
 
-	log.Infoln("select sql:", str, args)
-
-	row := s.QueryRowContext(s.ctx, str, args...)
-
-	var loginToken string
-	return loginToken, row.Scan(&loginToken)
+var TableCreateMap = map[string]func(ctx context.Context, db *sql.DB) error{
+	UserTable:    createUserTable,
+	DeviceTable:  createDeviceTable,
+	PushKeyTable: createPushKeyTable,
+	MessageTable: createMessageTable,
 }
 
-func (s *PostgresDB) GetUserToken(loginToken string) (string, error) {
-	sel := s.NewSelectBuilder().Select("user_token")
-	sel.From(TokenTable)
-	sel.Where(sel.Equal("login_token", loginToken))
-	str, args := sel.Build()
+func createUserTable(ctx context.Context, db *sql.DB) error {
+	ctb := sqlbuilder.PostgreSQL.NewCreateTableBuilder()
+	ctb.CreateTable(UserTable).IfNotExists()
+	ctb.Define("id", "SERIAL", "PRIMARY KEY")
+	ctb.Define("uuid", "UUID", "NOT NULL")
+	ctb.Define("id_token", "VARCHAR(255)", "NOT NULL", "UNIQUE")
+	ctb.Define("create_at", "TIMESTAMP", "NOT NULL")
+	ctb.Define("update_at", "TIMESTAMP")
 
-	log.Infoln("select sql:", str, args)
+	str, args := ctb.Build()
 
-	row := s.QueryRowContext(s.ctx, str, args...)
+	log.Infoln("CreateUserTable:", str, args)
 
-	var userToken string
-	return userToken, row.Scan(&userToken)
+	_, err := db.ExecContext(ctx, str, args...)
+	if err != nil {
+		return fmt.Errorf("create table %s: %w", UserTable, err)
+	}
+	return nil
 }
 
-func (s *PostgresDB) RemoveToken(userToken, loginToken string) error {
-	del := s.NewDeleteBuilder().DeleteFrom(TokenTable)
-	del.Where(del.Or(del.Equal("user_token", userToken), del.Equal("login_token", loginToken)))
-	str, args := del.Build()
+func createDeviceTable(ctx context.Context, db *sql.DB) error {
+	ctb := sqlbuilder.PostgreSQL.NewCreateTableBuilder()
+	ctb.CreateTable(DeviceTable).IfNotExists()
+	ctb.Define("id", "SERIAL", "PRIMARY KEY")
+	ctb.Define("own_uuid", "UUID", "NOT NULL")
+	ctb.Define("device_id", "VARCHAR(64)", "NOT NULL", "UNIQUE")
+	ctb.Define("type", "VARCHAR(32)")
+	ctb.Define("is_clip", "SMALLINT")
+	ctb.Define("name", "VARCHAR(32)")
+	ctb.Define("create_at", "TIMESTAMP", "NOT NULL")
+	ctb.Define("update_at", "TIMESTAMP")
 
-	log.Infoln("delete row:", str, args)
+	str, args := ctb.Build()
 
-	_, err := s.ExecContext(s.ctx, str, args...)
-	return err
+	log.Infoln("CreateDeviceTable:", str, args)
+
+	_, err := db.ExecContext(ctx, str, args...)
+	if err != nil {
+		return fmt.Errorf("create table %s: %w", DeviceTable, err)
+	}
+	return nil
+}
+
+func createPushKeyTable(ctx context.Context, db *sql.DB) error {
+	ctb := sqlbuilder.PostgreSQL.NewCreateTableBuilder()
+	ctb.CreateTable(PushKeyTable).IfNotExists()
+	ctb.Define("id", "SERIAL", "PRIMARY KEY")
+	ctb.Define("own_uuid", "UUID", "NOT NULL")
+	ctb.Define("name", "VARCHAR(32)")
+	ctb.Define("key", "VARCHAR(64)", "NOT NULL", "UNIQUE")
+	ctb.Define("create_at", "TIMESTAMP", "NOT NULL")
+	ctb.Define("update_at", "TIMESTAMP")
+
+	str, args := ctb.Build()
+
+	log.Infoln("CreatePushKeyTable:", str, args)
+
+	_, err := db.ExecContext(ctx, str, args...)
+	if err != nil {
+		return fmt.Errorf("create table %s: %w", PushKeyTable, err)
+	}
+	return nil
+}
+
+func createMessageTable(ctx context.Context, db *sql.DB) error {
+	ctb := sqlbuilder.PostgreSQL.NewCreateTableBuilder()
+	ctb.CreateTable(MessageTable).IfNotExists()
+	ctb.Define("id", "SERIAL", "PRIMARY KEY")
+	ctb.Define("own_uuid", "UUID", "NOT NULL")
+	ctb.Define("text", "TEXT")
+	ctb.Define("type", "VARCHAR(32)")
+	ctb.Define("note", "VARCHAR(64)")
+	ctb.Define("push_key", "VARCHAR(64)", "NOT NULL")
+	ctb.Define("url", "VARCHAR(255)")
+	ctb.Define("send_at", "TIMESTAMP", "NOT NULL")
+
+	str, args := ctb.Build()
+
+	log.Infoln("CreateMessageTable:", str, args)
+
+	_, err := db.ExecContext(ctx, str, args...)
+	if err != nil {
+		return fmt.Errorf("create table %s: %w", MessageTable, err)
+	}
+	return nil
 }

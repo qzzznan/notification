@@ -3,14 +3,24 @@ package pushdeer
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/qzzznan/notification/model"
+	"github.com/qzzznan/notification/util"
 	"net/http"
 )
 
 func reg(c *gin.Context) {
 	regInfo := &model.RegInfo{}
-	err := c.Bind(regInfo)
+	err := c.Bind(&regInfo)
 	if err != nil {
-		c.JSON(http.StatusNotAcceptable, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":  1,
+			"error": err.Error(),
+		})
+		return
+	}
+
+	err = util.Validate.Struct(regInfo)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{
 			"code": 1, "error": err.Error(),
 		})
 		return

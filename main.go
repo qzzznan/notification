@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/qzzznan/notification/bark"
+	"github.com/qzzznan/notification/db"
 	"github.com/qzzznan/notification/pushdeer"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -27,8 +28,13 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	err = db.InitPostgresDB()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	e := gin.Default()
-	e.Use(gin.Recovery())
+	//e.Use(gin.Recovery())
 	e.Use(ginBodyLogMiddleware)
 
 	pushdeer.InitDerHandler(e)

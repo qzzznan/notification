@@ -3,8 +3,11 @@ package util
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"github.com/go-playground/validator/v10"
 	"github.com/satori/go.uuid"
 )
+
+var Validate = validator.New()
 
 func GenUID() string {
 	return uuid.NewV4().String()

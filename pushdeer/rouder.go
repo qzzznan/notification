@@ -1,24 +1,10 @@
 package pushdeer
 
 import (
-	"context"
 	"github.com/gin-gonic/gin"
-	db2 "github.com/qzzznan/notification/db"
-	log "github.com/sirupsen/logrus"
 )
 
-var DB db2.DeerDB
-
 func InitDerHandler(e *gin.Engine) {
-	// TODO: 移到其他地方去
-	s := &db2.PostgresDB{}
-	err := s.Init(context.Background())
-	if err != nil {
-		log.Fatalln(err)
-	}
-	DB = s
-	// -----
-
 	{
 		login := e.Group("/login")
 		login.GET("/fake", fake)
