@@ -42,6 +42,9 @@ func ExistUser(uuid, token string) (string, error) {
 
 	var UUID sql.NullString
 	err := db.QueryRowx(str, args...).Scan(&UUID)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
 	if err != nil {
 		return "", err
 	}
