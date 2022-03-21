@@ -15,14 +15,14 @@ type User struct {
 }
 
 type Device struct {
-	ID       int64     `db:"id"`
-	UserID   int64     `db:"user_id"`
-	DeviceID string    `db:"device_id"`
-	Type     string    `db:"type"`
-	IsClip   string    `db:"is_clip"`
-	Name     string    `db:"name"`
-	CreateAt time.Time `db:"create_at"`
-	UpdateAt time.Time `db:"update_at"`
+	ID       int64     `db:"id" json:"id"`
+	UserID   int64     `db:"user_id" json:"uid"`
+	DeviceID string    `db:"device_id" json:"device_id"`
+	Type     string    `db:"type" json:"type"`
+	IsClip   string    `db:"is_clip" json:"is_clip"`
+	Name     string    `db:"name" json:"name"`
+	CreateAt time.Time `db:"create_at" json:"-"`
+	UpdateAt time.Time `db:"update_at" json:"-"`
 }
 
 type PushKey struct {

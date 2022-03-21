@@ -67,41 +67,162 @@ func GetUser(uuid, appleID string) (*model.User, error) {
 }
 
 func InsertDevice(device *model.Device) error {
+	ins := sqlbuilder.PostgreSQL.NewInsertBuilder()
+	ins.InsertInto(DeviceTable)
+	ins.Cols("user_id", "device_id", "type", "is_clip", "name", "create_at", "update_at")
+	ins.Values(device.UserID, device.DeviceID, device.Type, device.IsClip, device.Name, time.Now(), time.Now())
+	str, args := ins.Build()
+
+	log.Infoln("InsertDevice:", str, args)
+
+	_, err := db.Exec(str, args...)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func GetDevice(deviceID string) *model.Device {
-	return nil
+func GetDevice(id int64) (*model.Device, error) {
+	s := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	s.Select("id", "user_id", "device_id", "type", "is_clip", "name", "create_at", "update_at")
+	s.From(DeviceTable)
+	s.Where(s.Equal("id", id))
+	str, args := s.Build()
+
+	log.Infoln("GetDevice:", str, args)
+
+	device := &model.Device{}
+	err := db.Get(device, str, args...)
+	if err != nil {
+		return nil, err
+	}
+	return device, nil
 }
 
-func GetAllDevice(ownUUID string) []*model.Device {
-	return nil
+func GetAllDevice(userID int64) ([]*model.Device, error) {
+	s := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	s.Select("id", "user_id", "device_id", "type", "is_clip", "name", "create_at", "update_at")
+	s.From(DeviceTable)
+	s.Where(s.Equal("user_id", userID))
+	str, args := s.Build()
+
+	log.Infoln("GetAllDevice:", str, args)
+
+	devices := make([]*model.Device, 0)
+	err := db.Select(&devices, str, args...)
+	if err != nil {
+		return nil, err
+	}
+	return devices, nil
 }
 
-func UpdateDeviceName(deviceID string, newName string) error {
+func UpdateDeviceName(id int64, newName string) error {
+	update := sqlbuilder.PostgreSQL.NewUpdateBuilder()
+	update.Update(DeviceTable)
+	update.Set(update.Assign("name", newName))
+	update.Where(update.Equal("id", id))
+	str, args := update.Build()
+
+	log.Infoln("UpdateDeviceName:", str, args)
+
+	_, err := db.Exec(str, args...)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func InsertPushKey(key *model.PushKey) error {
+	ins := sqlbuilder.PostgreSQL.NewInsertBuilder()
+	ins.InsertInto(PushKeyTable)
+	ins.Cols("user_id", "name", "key", "create_at", "update_at")
+	ins.Values(key.UserID, key.Name, key.Key, time.Now(), time.Now())
+	str, args := ins.Build()
+
+	log.Infoln("InsertPushKey:", str, args)
+
+	_, err := db.Exec(str, args...)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func GetPushKey(key string) *model.PushKey {
-	return nil
+func GetPushKey(id int64, name string) (*model.PushKey, error) {
+	s := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	s.Select("id", "user_id", "name", "key", "create_at", "update_at")
+	s.From(PushKeyTable)
+	if id != 0 {
+		s.Where(s.Equal("id", id))
+	} else if name != "" {
+		s.Where(s.Equal("name", name))
+	} else {
+		return nil, fmt.Errorf("id or name is required")
+	}
+	str, args := s.Build()
+
+	log.Infoln("GetPushKey:", str, args)
+
+	key := &model.PushKey{}
+	err := db.Get(key, str, args...)
+	if err != nil {
+		return nil, err
+	}
+	return key, nil
 }
 
-func GetAllPushKey(ownUUID string) []*model.PushKey {
-	return nil
+func GetAllPushKey(userID int64) ([]*model.PushKey, error) {
+	s := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	s.Select("id", "user_id", "name", "key", "create_at", "update_at")
+	s.From(PushKeyTable)
+	s.Where(s.Equal("user_id", userID))
+	str, args := s.Build()
+
+	log.Infoln("GetAllPushKey:", str, args)
+
+	list := make([]*model.PushKey, 0)
+	return list, db.Select(&list, str, args...)
 }
 
-func UpdatePushKeyName(key string, newName string) error {
-	return nil
-}
+func UpdatePushKey(keyID int64, newName, newKey string) error {
+	update := sqlbuilder.PostgreSQL.NewUpdateBuilder()
+	update.Update(PushKeyTable)
+	if newName != "" {
+		update.Set(update.Assign("name", newName))
+	}
+	if newKey != "" {
+		update.Set(update.Assign("key", newKey))
+	}
+	update.Where(update.Equal("id", keyID))
+	str, args := update.Build()
 
-func UpdatePushKey(key string, newKey string) error {
-	return nil
+	log.Infoln("UpdatePushKeyName:", str, args)
+
+	_, err := db.Exec(str, args...)
+	return err
 }
 
 func AddMessage(msg *model.Message) error {
-	return nil
+	ins := sqlbuilder.PostgreSQL.NewInsertBuilder()
+	ins.InsertInto(MessageTable)
+	ins.Cols("user_id", "text", "type", "note", "push_key", "url", "send_at")
+	ins.Values(msg.UserID, msg.Text, msg.Type, msg.Note, msg.PushKey, msg.URL, msg.SendAt)
+	str, args := ins.Build()
+
+	log.Infoln("AddMessage:", str, args)
+
+	_, err := db.Exec(str, args...)
+	return err
+}
+
+func clearDB() {
+	var err error
+	for _, v := range []string{
+		DeviceTable, PushKeyTable, MessageTable, UserTable,
+	} {
+		_, err = db.Exec("TRUNCATE TABLE " + v)
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
 }
