@@ -1,18 +1,22 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
 type User struct {
 	ID       int64     `db:"id"`
+	AppleID  string    `db:"apple_id"`
+	Email    string    `db:"email"`
+	Name     string    `db:"name"`
 	UUID     string    `db:"uuid"`
-	IDToken  string    `db:"id_token"`
 	CreateAt time.Time `db:"create_at"`
 	UpdateAt time.Time `db:"update_at"`
 }
 
 type Device struct {
 	ID       int64     `db:"id"`
-	OwnUUID  string    `db:"own_uuid"`
+	UserID   int64     `db:"user_id"`
 	DeviceID string    `db:"device_id"`
 	Type     string    `db:"type"`
 	IsClip   string    `db:"is_clip"`
@@ -23,7 +27,7 @@ type Device struct {
 
 type PushKey struct {
 	ID       int64     `db:"id"`
-	OwnUUID  string    `db:"own_uuid"`
+	UserID   int64     `db:"user_id"`
 	Name     string    `db:"name"`
 	Key      string    `db:"key"`
 	CreateAt time.Time `db:"create_at"`
@@ -32,7 +36,7 @@ type PushKey struct {
 
 type Message struct {
 	ID      int64     `db:"id"`
-	OwnUUID string    `db:"own_uuid"`
+	UserID  int64     `db:"user_id"`
 	Text    string    `db:"text"`
 	Type    string    `db:"type"`
 	Note    string    `db:"note"`

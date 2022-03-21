@@ -3,7 +3,10 @@ package util
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/golang-jwt/jwt"
 	"github.com/satori/go.uuid"
 )
 
@@ -20,4 +23,34 @@ func GenToken(token string) string {
 		arr = append(arr, v)
 	}
 	return hex.EncodeToString(arr) + "-SHA256"
+}
+
+func GetFields(claims jwt.MapClaims, fields ...string) (map[string]string, error) {
+	m := make(map[string]string)
+	for _, v := range fields {
+		f, ok := claims[v]
+		if !ok {
+			return nil, fmt.Errorf("field %s not found", v)
+		}
+		s, ok := f.(string)
+		if !ok {
+			return nil, fmt.Errorf("field %s is not string", v)
+		}
+		m[v] = s
+	}
+	return m, nil
+}
+
+func FillRsp(c *gin.Context, state int, code int, err error, content interface{}) {
+	if err != nil || code != 0 {
+		c.JSON(state, gin.H{
+			"code":  code,
+			"error": err,
+		})
+		return
+	}
+	c.JSON(state, gin.H{
+		"code":    code,
+		"content": content,
+	})
 }

@@ -9,12 +9,12 @@ import (
 	"time"
 )
 
-func InsertUser(uuid, token string) error {
+func InsertUser(appleID, email, name, uuid string) error {
 	ib := sqlbuilder.PostgreSQL.NewInsertBuilder()
 	ib.InsertInto(UserTable)
-	ib.Cols("uuid", "id_token", "create_at")
-	ib.Values(uuid, token, time.Now())
-	ib.SQL("ON CONFLICT (id_token) DO NOTHING")
+	ib.Cols("apple_id", "email", "name", "uuid", "create_at")
+	ib.Values(appleID, email, name, uuid, time.Now())
+	ib.SQL("ON CONFLICT (apple_id) DO NOTHING")
 
 	str, args := ib.Build()
 
@@ -24,47 +24,42 @@ func InsertUser(uuid, token string) error {
 	return err
 }
 
-func ExistUser(uuid, token string) (string, error) {
+func ExistUser(appleID string) (string, error) {
 	s := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	s.Select("uuid").From(UserTable)
-
-	if uuid != "" {
-		s.Where(s.Equal("uuid", uuid))
-	} else if token != "" {
-		s.Where(s.Equal("id_token", token))
-	} else {
-		return "", fmt.Errorf("uuid or token is empty")
-	}
-
+	s.Where(s.Equal("apple_id", appleID))
 	str, args := s.Build()
 
 	log.Infoln("ExistUser:", str, args)
 
-	var UUID sql.NullString
-	err := db.QueryRowx(str, args...).Scan(&UUID)
+	var uuid sql.NullString
+	err := db.QueryRowx(str, args...).Scan(&uuid)
 	if err == sql.ErrNoRows {
 		return "", nil
 	}
 	if err != nil {
 		return "", err
 	}
-	if UUID.Valid {
-		return UUID.String, nil
-	}
-	return "", nil
+	return uuid.String, nil
 }
 
-func GetUser(uuid string) (*model.User, error) {
+func GetUser(uuid, appleID string) (*model.User, error) {
 	s := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	s.Select("id", "uuid", "id_token", "create_at", "update_at")
+	s.Select("id", "apple_id", "email", "name", "uuid", "create_at")
 	s.From(UserTable)
-	s.Where(s.Equal("uuid", uuid))
+	if uuid != "" {
+		s.Where(s.Equal("uuid", uuid))
+	} else if appleID != "" {
+		s.Where(s.Equal("apple_id", appleID))
+	} else {
+		return nil, fmt.Errorf("uuid or apple_id is required")
+	}
 	query, args := s.Build()
 
 	log.Infoln("GetUser:", query, args)
 
 	user := &model.User{}
-	err := db.Select(user, query, args)
+	err := db.Get(user, query, args...)
 	if err != nil {
 		return nil, err
 	}
