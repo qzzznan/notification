@@ -1,7 +1,6 @@
 package pushdeer
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/qzzznan/notification/db"
 	"github.com/qzzznan/notification/model"
@@ -11,7 +10,7 @@ import (
 
 func reg(c *gin.Context) {
 	regInfo := &model.RegInfo{}
-	err := c.Bind(&regInfo)
+	err := c.BindQuery(&regInfo)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":  1,
@@ -58,11 +57,7 @@ func reg(c *gin.Context) {
 }
 
 func list(c *gin.Context) {
-	token, ok := c.GetPostForm("token")
-	if !ok {
-		util.FillRsp(c, http.StatusForbidden, 1, fmt.Errorf("token is required"), nil)
-		return
-	}
+	token := c.Query("token")
 	id, err := db.GetUserID(token)
 	if err != nil {
 		util.FillRsp(c, http.StatusForbidden, 1, err, nil)

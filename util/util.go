@@ -8,6 +8,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt"
 	"github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
+	"runtime"
 )
 
 var Validate = validator.New()
@@ -43,6 +45,8 @@ func GetFields(claims jwt.MapClaims, fields ...string) (map[string]string, error
 
 func FillRsp(c *gin.Context, state int, code int, err error, content interface{}) {
 	if err != nil || code != 0 {
+		_, f, l, _ := runtime.Caller(1)
+		log.Errorf("response error file:%s line:%d err:%v", f, l, err)
 		c.JSON(state, gin.H{
 			"code":  code,
 			"error": err,

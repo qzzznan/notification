@@ -36,8 +36,8 @@ func main() {
 
 	e := gin.Default()
 	//e.Use(gin.Recovery())
-	e.Use(ginReqLogMiddleware)
-	e.Use(ginBodyLogMiddleware)
+	//e.Use(ginReqLogMiddleware)
+	//e.Use(ginBodyLogMiddleware)
 
 	pushdeer.InitDerHandler(e)
 

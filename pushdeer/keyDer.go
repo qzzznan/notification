@@ -1,38 +1,91 @@
 package pushdeer
 
 import (
+	"fmt"
+	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gin-gonic/gin"
+	"github.com/qzzznan/notification/db"
+	"github.com/qzzznan/notification/model"
+	"github.com/qzzznan/notification/util"
 	"net/http"
 )
 
 func gen(c *gin.Context) {
 	token := c.GetString("token")
-	_ = token
+	id, err := db.GetUserID(token)
+	if err != nil {
+		util.FillRsp(c, 400, 1, fmt.Errorf("Invalid token"), nil)
+		return
+	}
+	name := c.GetString("name")
+	if name == "" {
+		name = gofakeit.PetName()
+	}
+
+	key := gofakeit.LetterN(64)
+	err = db.InsertPushKey(&model.PushKey{
+		UserID: id,
+		Key:    key,
+		Name: "",
+	})
+	if err != nil {
+		util.FillRsp(c, 400, 1, err, nil)
+		return
+	}
+
+	keys, err := db.GetAllPushKey(id)
+	if err != nil {
+		util.FillRsp(c, 400, 1, err, nil)
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0, "content": gin.H{
-			"keys": []gin.H{
-				{"id": 1, "uid": 1, "key": "adsafasdfasdf", "name": "adfsafs", "create_at": "adsfa"},
-				{"id": 2, "uid": 1, "key": "adsafasdfasdf", "name": "adfsafs", "create_at": "adsfa"},
-			},
+			"keys": keys,
 		},
 	})
 }
 
 func keyRename(c *gin.Context) {
 	token := c.GetString("token")
-	id := c.GetString("id")
+	kid := c.GetInt64("id")
 	newKey := c.GetString("name")
-	_ = token
-	_ = id
-	_ = newKey
+
+	_, err := db.GetUserID(token)
+	if err != nil {
+		util.FillRsp(c, 400, 1, err, nil)
+		return
+	}
+
+	err = db.UpdatePushKey(kid, newKey, "")
+	if err != nil {
+		util.FillRsp(c, 400, 1, err, nil)
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"code": 0, "content": gin.H{
+			"message": "done",
+		},
+	})
 }
 
 func keyRegen(c *gin.Context) {
 	token := c.GetString("token")
-	id := c.GetString("id")
-	_ = token
-	_ = id
+	kid := c.GetInt64("id")
+
+	_, err := db.GetUserID(token)
+	if err != nil {
+		util.FillRsp(c, 400, 1, err, nil)
+		return
+	}
+
+	k := gofakeit.LetterN(64)
+	err = db.UpdatePushKey(kid, "", k)
+	if err != nil {
+		util.FillRsp(c, 400, 1, err, nil)
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0, "content": gin.H{"message": "done"},
@@ -41,13 +94,21 @@ func keyRegen(c *gin.Context) {
 
 func keyList(c *gin.Context) {
 	token := c.GetString("token")
-	_ = token
+	uid, err := db.GetUserID(token)
+	if err != nil {
+		util.FillRsp(c, 400, 1, err, nil)
+		return
+	}
+
+	keys, err := db.GetAllPushKey(uid)
+	if err != nil {
+		util.FillRsp(c, 400, 1, err, nil)
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0, "content": gin.H{
-			"keys": []gin.H{
-				{"id": 1, "uid": 1, "key": "adsafasdfasdf"},
-			},
+			"keys": keys,
 		},
 	})
 }
@@ -57,6 +118,8 @@ func keyRemove(c *gin.Context) {
 	id := c.GetString("id")
 	_ = token
 	_ = id
+
+	//TODO: remove key
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0, "content": gin.H{"message": "done"},
