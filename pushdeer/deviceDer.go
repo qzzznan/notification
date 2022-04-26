@@ -7,6 +7,7 @@ import (
 	"github.com/qzzznan/notification/model"
 	"github.com/qzzznan/notification/util"
 	"net/http"
+	"strconv"
 )
 
 func reg(c *gin.Context) {
@@ -78,9 +79,9 @@ func list(c *gin.Context) {
 }
 
 func rename(c *gin.Context) {
-	token := c.GetString("token")
-	id := c.GetInt64("id")
-	name := c.GetString("name")
+	token := c.Query("token")
+	id := c.Query("id")
+	name := c.Query("name")
 
 	_, err := db.GetUserID(token)
 	if err != nil {
@@ -88,7 +89,12 @@ func rename(c *gin.Context) {
 		return
 	}
 
-	err = db.UpdateDeviceName(id, name)
+	deviceID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		util.FillRsp(c, http.StatusForbidden, 1, err, nil)
+		return
+	}
+	err = db.UpdateDeviceName(deviceID, name)
 	if err != nil {
 		util.FillRsp(c, http.StatusForbidden, 1, err, nil)
 		return
@@ -100,8 +106,8 @@ func rename(c *gin.Context) {
 }
 
 func remove(c *gin.Context) {
-	token := c.GetString("token")
-	id := c.GetInt64("id")
+	token := c.Query("token")
+	id := c.Query("id")
 
 	_, err := db.GetUserID(token)
 	if err != nil {

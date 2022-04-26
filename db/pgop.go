@@ -217,6 +217,20 @@ func AddMessage(msg *model.Message) error {
 	return err
 }
 
+func GetMessages(userID int64, offset, count int) ([]*model.Message, error) {
+	sel := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	sel.Select("id", "user_id", "text", "type", "note", "push_key", "url", "send_at")
+	sel.From(MessageTable)
+	sel.Where(sel.Equal("user_id", userID))
+	sel.Offset(offset).Limit(count)
+	str, args := sel.Build()
+
+	log.Infoln("Get Messages", str, args)
+
+	list := make([]*model.Message, 0)
+	return list, db.Select(&list, str, args...)
+}
+
 func clearDB() {
 	var err error
 	for _, v := range []string{

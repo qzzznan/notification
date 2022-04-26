@@ -41,8 +41,8 @@ type Message struct {
 	UserID      string    `db:"user_id" json:"uid"`
 	Text        string    `db:"text" json:"text"`
 	Type        string    `db:"type" json:"type"`
-	Note        string    `db:"note" json:"-"`
-	PushKeyName string    `db:"push_key" json:"-"`
+	Note        string    `db:"note" json:"desp"`
+	PushKeyName string    `db:"push_key" json:"pushkey_name"`
 	URL         string    `db:"url" json:"-"`
 	SendAt      time.Time `db:"send_at" json:"created_at"`
 }

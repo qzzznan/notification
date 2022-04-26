@@ -79,7 +79,7 @@ func keyRename(c *gin.Context) {
 
 func keyRegen(c *gin.Context) {
 	token := c.Query("token")
-	kid := c.GetInt64("id")
+	k := c.Query("id")
 
 	_, err := db.GetUserID(token)
 	if err != nil {
@@ -87,8 +87,14 @@ func keyRegen(c *gin.Context) {
 		return
 	}
 
-	k := gofakeit.LetterN(64)
-	err = db.UpdatePushKey(kid, "", k)
+	kid, err := strconv.ParseInt(k, 10, 64)
+	if err != nil {
+		util.FillRsp(c, 400, 1, err, nil)
+		return
+	}
+
+	ks := gofakeit.LetterN(64)
+	err = db.UpdatePushKey(kid, "", ks)
 	if err != nil {
 		util.FillRsp(c, 400, 1, err, nil)
 		return
@@ -121,8 +127,8 @@ func keyList(c *gin.Context) {
 }
 
 func keyRemove(c *gin.Context) {
-	token := c.GetString("token")
-	id := c.GetString("id")
+	token := c.Query("token")
+	id := c.Query("id")
 	_ = token
 	_ = id
 
