@@ -12,7 +12,7 @@ import (
 func InsertUser(appleID, email, name, uuid string) error {
 	ib := sqlbuilder.PostgreSQL.NewInsertBuilder()
 	ib.InsertInto(UserTable)
-	ib.Cols("apple_id", "email", "name", "uuid", "create_at")
+	ib.Cols("apple_id", "email", "name", "uuid", "created_at")
 	ib.Values(appleID, email, name, uuid, time.Now())
 	ib.SQL("ON CONFLICT (apple_id) DO NOTHING")
 
@@ -45,7 +45,7 @@ func ExistUser(appleID string) (string, error) {
 
 func GetUser(uuid, appleID string) (*model.User, error) {
 	s := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	s.Select("id", "apple_id", "email", "name", "uuid", "create_at")
+	s.Select("id", "apple_id", "email", "name", "uuid", "created_at")
 	s.From(UserTable)
 	if uuid != "" {
 		s.Where(s.Equal("uuid", uuid))
@@ -69,7 +69,7 @@ func GetUser(uuid, appleID string) (*model.User, error) {
 func InsertDevice(device *model.Device) error {
 	ins := sqlbuilder.PostgreSQL.NewInsertBuilder()
 	ins.InsertInto(DeviceTable)
-	ins.Cols("user_id", "device_id", "type", "is_clip", "name", "create_at", "update_at")
+	ins.Cols("user_id", "device_id", "type", "is_clip", "name", "created_at", "updated_at")
 	ins.Values(device.UserID, device.DeviceID, device.Type, device.IsClip, device.Name, time.Now(), time.Now())
 	str, args := ins.Build()
 
@@ -84,7 +84,7 @@ func InsertDevice(device *model.Device) error {
 
 func GetDevice(id int64) (*model.Device, error) {
 	s := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	s.Select("id", "user_id", "device_id", "type", "is_clip", "name", "create_at", "update_at")
+	s.Select("id", "user_id", "device_id", "type", "is_clip", "name", "created_at", "updated_at")
 	s.From(DeviceTable)
 	s.Where(s.Equal("id", id))
 	str, args := s.Build()
@@ -101,7 +101,7 @@ func GetDevice(id int64) (*model.Device, error) {
 
 func GetAllDevice(userID int64) ([]*model.Device, error) {
 	s := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	s.Select("id", "user_id", "device_id", "type", "is_clip", "name", "create_at", "update_at")
+	s.Select("id", "user_id", "device_id", "type", "is_clip", "name", "created_at", "updated_at")
 	s.From(DeviceTable)
 	s.Where(s.Equal("user_id", userID))
 	str, args := s.Build()
@@ -135,7 +135,7 @@ func UpdateDeviceName(id int64, newName string) error {
 func InsertPushKey(key *model.PushKey) error {
 	ins := sqlbuilder.PostgreSQL.NewInsertBuilder()
 	ins.InsertInto(PushKeyTable)
-	ins.Cols("user_id", "name", "key", "create_at", "update_at")
+	ins.Cols("user_id", "name", "key", "created_at", "updated_at")
 	ins.Values(key.UserID, key.Name, key.Key, time.Now(), time.Now())
 	str, args := ins.Build()
 
@@ -148,14 +148,16 @@ func InsertPushKey(key *model.PushKey) error {
 	return nil
 }
 
-func GetPushKey(id int64, name string) (*model.PushKey, error) {
+func GetPushKey(id int64, name, pushKey string) (*model.PushKey, error) {
 	s := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	s.Select("id", "user_id", "name", "key", "create_at", "update_at")
+	s.Select("id", "user_id", "name", "key", "created_at", "updated_at")
 	s.From(PushKeyTable)
 	if id != 0 {
 		s.Where(s.Equal("id", id))
 	} else if name != "" {
 		s.Where(s.Equal("name", name))
+	} else if pushKey != "" {
+		s.Where(s.Equal("key", pushKey))
 	} else {
 		return nil, fmt.Errorf("id or name is required")
 	}
@@ -173,7 +175,7 @@ func GetPushKey(id int64, name string) (*model.PushKey, error) {
 
 func GetAllPushKey(userID int64) ([]*model.PushKey, error) {
 	s := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	s.Select("id", "user_id", "name", "key", "create_at", "update_at")
+	s.Select("id", "user_id", "name", "key", "created_at", "updated_at")
 	s.From(PushKeyTable)
 	s.Where(s.Equal("user_id", userID))
 	str, args := s.Build()
@@ -206,7 +208,7 @@ func AddMessage(msg *model.Message) error {
 	ins := sqlbuilder.PostgreSQL.NewInsertBuilder()
 	ins.InsertInto(MessageTable)
 	ins.Cols("user_id", "text", "type", "note", "push_key", "url", "send_at")
-	ins.Values(msg.UserID, msg.Text, msg.Type, msg.Note, msg.PushKey, msg.URL, msg.SendAt)
+	ins.Values(msg.UserID, msg.Text, msg.Type, msg.Note, msg.PushKeyName, msg.URL, msg.SendAt)
 	str, args := ins.Build()
 
 	log.Infoln("AddMessage:", str, args)

@@ -1,6 +1,7 @@
 package pushdeer
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/qzzznan/notification/db"
 	"github.com/qzzznan/notification/model"
@@ -33,9 +34,9 @@ func reg(c *gin.Context) {
 	}
 
 	err = db.InsertDevice(&model.Device{
-		UserID:   id,
+		UserID:   fmt.Sprintf("%d", id),
 		DeviceID: regInfo.DeviceID,
-		Type:     "none",
+		Type:     "todo",
 		IsClip:   regInfo.IsClip,
 		Name:     regInfo.Name,
 	})

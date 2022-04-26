@@ -76,7 +76,7 @@ func TestInsertDevice(t *testing.T) {
 		typ := gofakeit.LetterN(3)
 		name := gofakeit.PetName()
 		device := &model.Device{
-			UserID:   userID,
+			UserID:   fmt.Sprintf("%d", userID),
 			DeviceID: deviceID,
 			Type:     typ,
 			Name:     name,
@@ -133,7 +133,7 @@ func TestInsertPushKey(t *testing.T) {
 		name := gofakeit.PetName()
 		key := gofakeit.LetterN(32)
 		k := &model.PushKey{
-			UserID: v.ID,
+			UserID: fmt.Sprintf("%d", v.ID),
 			Name:   name,
 			Key:    key,
 		}
@@ -159,7 +159,7 @@ func TestGetAllPushKey(t *testing.T) {
 
 func TestGetPushKey(t *testing.T) {
 	for _, v := range keys {
-		key, err := GetPushKey(v.ID, v.Name)
+		key, err := GetPushKey(v.ID, v.Name, "")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -183,13 +183,13 @@ func TestUpdatePushKey(t *testing.T) {
 func TestAddMessage(t *testing.T) {
 	for _, v := range outUsers {
 		msg := &model.Message{
-			UserID:  v.ID,
-			Text:    gofakeit.Adjective(),
-			Type:    gofakeit.StreetName(),
-			Note:    gofakeit.PetName(),
-			PushKey: gofakeit.LetterN(32),
-			URL:     gofakeit.URL(),
-			SendAt:  time.Now(),
+			UserID:      fmt.Sprintf("%d", v.ID),
+			Text:        gofakeit.Adjective(),
+			Type:        gofakeit.StreetName(),
+			Note:        gofakeit.PetName(),
+			PushKeyName: gofakeit.LetterN(32),
+			URL:         gofakeit.URL(),
+			SendAt:      time.Now(),
 		}
 		err := AddMessage(msg)
 		if err != nil {

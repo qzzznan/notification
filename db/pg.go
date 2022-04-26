@@ -57,8 +57,8 @@ func createUserTable(ctx context.Context, db *sql.DB) error {
 	ctb.Define("email", "VARCHAR(127)")
 	ctb.Define("name", "VARCHAR(127)")
 	ctb.Define("uuid", "UUID", "NOT NULL", "UNIQUE")
-	ctb.Define("create_at", "TIMESTAMP", "NOT NULL")
-	ctb.Define("update_at", "TIMESTAMP")
+	ctb.Define("created_at", "TIMESTAMP", "NOT NULL")
+	ctb.Define("updated_at", "TIMESTAMP")
 
 	str, args := ctb.Build()
 
@@ -80,8 +80,8 @@ func createDeviceTable(ctx context.Context, db *sql.DB) error {
 	ctb.Define("type", "VARCHAR(32)")
 	ctb.Define("is_clip", "SMALLINT")
 	ctb.Define("name", "VARCHAR(32)")
-	ctb.Define("create_at", "TIMESTAMP", "NOT NULL")
-	ctb.Define("update_at", "TIMESTAMP")
+	ctb.Define("created_at", "TIMESTAMP", "NOT NULL")
+	ctb.Define("updated_at", "TIMESTAMP")
 
 	str, args := ctb.Build()
 
@@ -101,8 +101,8 @@ func createPushKeyTable(ctx context.Context, db *sql.DB) error {
 	ctb.Define("user_id", "INT", "NOT NULL")
 	ctb.Define("name", "VARCHAR(32)")
 	ctb.Define("key", "VARCHAR(64)", "NOT NULL", "UNIQUE")
-	ctb.Define("create_at", "TIMESTAMP", "NOT NULL")
-	ctb.Define("update_at", "TIMESTAMP")
+	ctb.Define("created_at", "TIMESTAMP", "NOT NULL")
+	ctb.Define("updated_at", "TIMESTAMP")
 
 	str, args := ctb.Build()
 

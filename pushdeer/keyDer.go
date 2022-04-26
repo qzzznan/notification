@@ -8,6 +8,7 @@ import (
 	"github.com/qzzznan/notification/model"
 	"github.com/qzzznan/notification/util"
 	"net/http"
+	"strconv"
 )
 
 func gen(c *gin.Context) {
@@ -24,7 +25,7 @@ func gen(c *gin.Context) {
 
 	key := gofakeit.LetterN(64)
 	err = db.InsertPushKey(&model.PushKey{
-		UserID: id,
+		UserID: fmt.Sprintf("%d", id),
 		Key:    key,
 		Name:   "",
 	})
@@ -48,8 +49,8 @@ func gen(c *gin.Context) {
 
 func keyRename(c *gin.Context) {
 	token := c.Query("token")
-	kid := c.GetInt64("id")
-	newKey := c.GetString("name")
+	kidStr := c.Query("id")
+	newName := c.Query("name")
 
 	_, err := db.GetUserID(token)
 	if err != nil {
@@ -57,7 +58,13 @@ func keyRename(c *gin.Context) {
 		return
 	}
 
-	err = db.UpdatePushKey(kid, newKey, "")
+	kid, err := strconv.ParseInt(kidStr, 10, 64)
+	if err != nil {
+		util.FillRsp(c, 400, 1, err, nil)
+		return
+	}
+
+	err = db.UpdatePushKey(kid, newName, "")
 	if err != nil {
 		util.FillRsp(c, 400, 1, err, nil)
 		return
