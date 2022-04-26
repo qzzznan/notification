@@ -7,7 +7,7 @@ import (
 func InitDerHandler(e *gin.Engine) {
 	{
 		login := e.Group("/login")
-		login.GET("/fake", fake)
+		login.Any("/fake", fake)
 		login.POST("/idtoken", apple)
 	}
 	{

@@ -80,7 +80,7 @@ func TestInsertDevice(t *testing.T) {
 			DeviceID: deviceID,
 			Type:     typ,
 			Name:     name,
-			IsClip:   "0",
+			IsClip:   0,
 		}
 		err := InsertDevice(device)
 		if err != nil {

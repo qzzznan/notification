@@ -11,13 +11,13 @@ import (
 )
 
 func gen(c *gin.Context) {
-	token := c.GetString("token")
+	token := c.Query("token")
 	id, err := db.GetUserID(token)
 	if err != nil {
-		util.FillRsp(c, 400, 1, fmt.Errorf("Invalid token"), nil)
+		util.FillRsp(c, 400, 1, fmt.Errorf("invalid token"), nil)
 		return
 	}
-	name := c.GetString("name")
+	name := c.Query("name")
 	if name == "" {
 		name = gofakeit.PetName()
 	}
@@ -26,7 +26,7 @@ func gen(c *gin.Context) {
 	err = db.InsertPushKey(&model.PushKey{
 		UserID: id,
 		Key:    key,
-		Name: "",
+		Name:   "",
 	})
 	if err != nil {
 		util.FillRsp(c, 400, 1, err, nil)
@@ -47,7 +47,7 @@ func gen(c *gin.Context) {
 }
 
 func keyRename(c *gin.Context) {
-	token := c.GetString("token")
+	token := c.Query("token")
 	kid := c.GetInt64("id")
 	newKey := c.GetString("name")
 
@@ -71,7 +71,7 @@ func keyRename(c *gin.Context) {
 }
 
 func keyRegen(c *gin.Context) {
-	token := c.GetString("token")
+	token := c.Query("token")
 	kid := c.GetInt64("id")
 
 	_, err := db.GetUserID(token)
@@ -93,7 +93,7 @@ func keyRegen(c *gin.Context) {
 }
 
 func keyList(c *gin.Context) {
-	token := c.GetString("token")
+	token := c.Query("token")
 	uid, err := db.GetUserID(token)
 	if err != nil {
 		util.FillRsp(c, 400, 1, err, nil)
