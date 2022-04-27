@@ -40,6 +40,10 @@ func main() {
 	}
 
 	e := gin.Default()
+	err = e.SetTrustedProxies(nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
 	//e.Use(ginReqLogMiddleware)
 	//e.Use(ginBodyLogMiddleware)
 
