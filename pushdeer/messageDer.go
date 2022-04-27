@@ -16,29 +16,41 @@ func push(c *gin.Context) {
 	text := c.Query("text")
 	desp := c.Query("desp")
 	typ := c.Query("type")
-	_ = text
-	_ = desp
-	_ = typ
+	typ = "markdown"
 
 	ki, err := db.GetPushKeyInfo(pushKey)
 	if err != nil {
 		util.FillRsp(c, 200, 1, err, nil)
 		return
 	}
-
-	err = db.AddMessage(&model.Message{
-		UserID:      ki.UserID,
-		Text:        text,
-		Type:        "markdown",
-		PushKeyName: ki.Name,
-		SendAt:      time.Now(),
-	})
+	devices, err := db.GetAllDevice(ki.UserID)
 	if err != nil {
 		util.FillRsp(c, 200, 1, err, nil)
 		return
 	}
 
-	log.Info("push message to ", pushKey)
+	msg := &model.Message{
+		UserID:      ki.UserID,
+		Text:        text,
+		Type:        typ,
+		PushKeyName: ki.Name,
+		SendAt:      time.Now(),
+		Note:        desp,
+	}
+
+	err = PushMessage(msg, devices)
+	if err != nil {
+		util.FillRsp(c, 200, 1, err, nil)
+		return
+	}
+
+	err = db.AddMessage(msg)
+	if err != nil {
+		util.FillRsp(c, 200, 1, err, nil)
+		return
+	}
+
+	log.Debug("push message to ", pushKey)
 	//TODO: APNS
 
 	c.JSON(http.StatusOK, gin.H{
@@ -54,7 +66,7 @@ func msgList(c *gin.Context) {
 	token := c.Query("token")
 	limit := c.Query("limit")
 
-	id, err := db.GetUserID(token)
+	id, err := db.GetUserIDStr(token)
 	if err != nil {
 		util.FillRsp(c, 200, 1, err, nil)
 		return
@@ -81,9 +93,18 @@ func msgList(c *gin.Context) {
 func msgRemove(c *gin.Context) {
 	token := c.Query("token")
 	msgID := c.Query("id")
-	_ = token
-	_ = msgID
-	//TODO: remove
+
+	_, err := db.GetUserIDStr(token)
+	if err != nil {
+		util.FillRsp(c, 200, 1, err, nil)
+		return
+	}
+
+	err = db.RemoveMessage(msgID)
+	if err != nil {
+		util.FillRsp(c, 200, 1, err, nil)
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,

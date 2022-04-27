@@ -46,3 +46,11 @@ type Message struct {
 	URL         string    `db:"url" json:"-"`
 	SendAt      time.Time `db:"send_at" json:"created_at"`
 }
+
+type BarkDevice struct {
+	DeviceKey   string `db:"device_key"`
+	DeviceToken string `db:"device_token"`
+}
+
+type BarkMessage struct {
+}

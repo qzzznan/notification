@@ -4,12 +4,14 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github.com/qzzznan/notification/model"
 	"github.com/samber/lo"
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/payload"
 	"github.com/sideshow/apns2/token"
 	"golang.org/x/net/http2"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -50,15 +52,27 @@ func InitPushClient() error {
 	return nil
 }
 
-func pushMessage() error {
+func PushMessage(msg *model.APNsMessage) error {
 	pl := payload.NewPayload().
-		AlertTitle("").
-		AlertBody("").
-		Sound("").
-		Category("")
+		AlertTitle(msg.Title).
+		AlertBody(msg.Body).
+		Sound(msg.Sound).
+		Category(msg.Category)
+
+	group, ok := msg.Data["group"]
+	if ok {
+		g, ok := group.(string)
+		if ok {
+			pl = pl.ThreadID(g)
+		}
+	}
+
+	for k, v := range msg.Data {
+		pl.Custom(strings.ToLower(k), fmt.Sprintf("%v", v))
+	}
 
 	rsp, err := client.Push(&apns2.Notification{
-		DeviceToken: "",
+		DeviceToken: msg.DeviceToken,
 		Topic:       topic,
 		Payload:     pl.MutableContent(),
 		Expiration:  time.Now().Add(time.Hour * 24),

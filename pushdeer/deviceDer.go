@@ -1,7 +1,6 @@
 package pushdeer
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/qzzznan/notification/db"
 	"github.com/qzzznan/notification/model"
@@ -14,30 +13,25 @@ func reg(c *gin.Context) {
 	regInfo := &model.RegInfo{}
 	err := c.BindQuery(&regInfo)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":  1,
-			"error": err.Error(),
-		})
+		util.FillRsp(c, 200, 1, err, nil)
 		return
 	}
 
 	err = util.Validate.Struct(regInfo)
 	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{
-			"code": 1, "error": err.Error(),
-		})
+		util.FillRsp(c, 200, 1, err, nil)
 		return
 	}
-	id, err := db.GetUserID(regInfo.Token)
+	id, err := db.GetUserIDStr(regInfo.Token)
 	if err != nil {
 		util.FillRsp(c, http.StatusForbidden, 1, err, nil)
 		return
 	}
 
 	err = db.InsertDevice(&model.Device{
-		UserID:   fmt.Sprintf("%d", id),
+		UserID:   id,
 		DeviceID: regInfo.DeviceID,
-		Type:     "todo",
+		Type:     "ios",
 		IsClip:   regInfo.IsClip,
 		Name:     regInfo.Name,
 	})
@@ -60,7 +54,7 @@ func reg(c *gin.Context) {
 
 func list(c *gin.Context) {
 	token := c.Query("token")
-	id, err := db.GetUserID(token)
+	id, err := db.GetUserIDStr(token)
 	if err != nil {
 		util.FillRsp(c, http.StatusForbidden, 1, err, nil)
 		return
@@ -71,10 +65,8 @@ func list(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 0, "content": gin.H{
-			"devices": all,
-		},
+	util.FillRsp(c, 200, 0, nil, gin.H{
+		"devices": all,
 	})
 }
 
@@ -83,7 +75,7 @@ func rename(c *gin.Context) {
 	id := c.Query("id")
 	name := c.Query("name")
 
-	_, err := db.GetUserID(token)
+	_, err := db.GetUserIDStr(token)
 	if err != nil {
 		util.FillRsp(c, http.StatusForbidden, 1, err, nil)
 		return
@@ -109,14 +101,17 @@ func remove(c *gin.Context) {
 	token := c.Query("token")
 	id := c.Query("id")
 
-	_, err := db.GetUserID(token)
+	_, err := db.GetUserIDStr(token)
 	if err != nil {
 		util.FillRsp(c, http.StatusForbidden, 1, err, nil)
 		return
 	}
 
-	_ = id
-	//TODO: remove
+	err = db.RemoveDevice(id)
+	if err != nil {
+		util.FillRsp(c, http.StatusForbidden, 1, err, nil)
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,

@@ -13,7 +13,7 @@ import (
 
 func gen(c *gin.Context) {
 	token := c.Query("token")
-	id, err := db.GetUserID(token)
+	id, err := db.GetUserIDStr(token)
 	if err != nil {
 		util.FillRsp(c, 400, 1, fmt.Errorf("invalid token"), nil)
 		return
@@ -25,9 +25,9 @@ func gen(c *gin.Context) {
 
 	key := gofakeit.LetterN(64)
 	err = db.InsertPushKey(&model.PushKey{
-		UserID: fmt.Sprintf("%d", id),
+		UserID: id,
 		Key:    key,
-		Name:   "",
+		Name:   name,
 	})
 	if err != nil {
 		util.FillRsp(c, 400, 1, err, nil)
@@ -52,7 +52,7 @@ func keyRename(c *gin.Context) {
 	kidStr := c.Query("id")
 	newName := c.Query("name")
 
-	_, err := db.GetUserID(token)
+	_, err := db.GetUserIDStr(token)
 	if err != nil {
 		util.FillRsp(c, 400, 1, err, nil)
 		return
@@ -81,7 +81,7 @@ func keyRegen(c *gin.Context) {
 	token := c.Query("token")
 	k := c.Query("id")
 
-	_, err := db.GetUserID(token)
+	_, err := db.GetUserIDStr(token)
 	if err != nil {
 		util.FillRsp(c, 400, 1, err, nil)
 		return
@@ -107,7 +107,7 @@ func keyRegen(c *gin.Context) {
 
 func keyList(c *gin.Context) {
 	token := c.Query("token")
-	uid, err := db.GetUserID(token)
+	uid, err := db.GetUserIDStr(token)
 	if err != nil {
 		util.FillRsp(c, 400, 1, err, nil)
 		return
@@ -129,10 +129,18 @@ func keyList(c *gin.Context) {
 func keyRemove(c *gin.Context) {
 	token := c.Query("token")
 	id := c.Query("id")
-	_ = token
-	_ = id
 
-	//TODO: remove key
+	_, err := db.GetUserIDStr(token)
+	if err != nil {
+		util.FillRsp(c, http.StatusForbidden, 1, err, nil)
+		return
+	}
+
+	err = db.RemoveKey(id)
+	if err != nil {
+		util.FillRsp(c, http.StatusForbidden, 1, err, nil)
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0, "content": gin.H{"message": "done"},

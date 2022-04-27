@@ -29,17 +29,22 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	err = pushdeer.InitPushClient("./static/c.p12")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	err = db.InitPostgresDB()
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	e := gin.Default()
-	//e.Use(gin.Recovery())
 	//e.Use(ginReqLogMiddleware)
 	//e.Use(ginBodyLogMiddleware)
 
 	pushdeer.InitDerHandler(e)
+	bark.InitBarkHandler(e)
 
 	addr := fmt.Sprintf("%s:%s",
 		viper.GetString("ip"),

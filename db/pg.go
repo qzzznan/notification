@@ -40,13 +40,16 @@ const (
 	DeviceTable  = "t_device"
 	PushKeyTable = "t_push_key"
 	MessageTable = "t_message"
+
+	BarkDeviceTable = "t_bark_device"
 )
 
 var TableCreateMap = map[string]func(ctx context.Context, db *sql.DB) error{
-	UserTable:    createUserTable,
-	DeviceTable:  createDeviceTable,
-	PushKeyTable: createPushKeyTable,
-	MessageTable: createMessageTable,
+	UserTable:       createUserTable,
+	DeviceTable:     createDeviceTable,
+	PushKeyTable:    createPushKeyTable,
+	MessageTable:    createMessageTable,
+	BarkDeviceTable: createBarkDeviceTable,
 }
 
 func createUserTable(ctx context.Context, db *sql.DB) error {
@@ -134,6 +137,22 @@ func createMessageTable(ctx context.Context, db *sql.DB) error {
 	_, err := db.ExecContext(ctx, str, args...)
 	if err != nil {
 		return fmt.Errorf("create table %s: %w", MessageTable, err)
+	}
+	return nil
+}
+
+func createBarkDeviceTable(ctx context.Context, db *sql.DB) error {
+	ctb := sqlbuilder.PostgreSQL.NewCreateTableBuilder()
+	ctb.CreateTable(BarkDeviceTable).IfNotExists()
+	ctb.Define("device_key", "UUID", "PRIMARY KEY")
+	ctb.Define("device_token", "VARCHAR(256)", "NOT NULL")
+
+	str, args := ctb.Build()
+	log.Infoln("CreateBarkDeviceTable:", str, args)
+
+	_, err := db.ExecContext(ctx, str, args...)
+	if err != nil {
+		return fmt.Errorf("create table %s: %w", BarkDeviceTable, err)
 	}
 	return nil
 }
