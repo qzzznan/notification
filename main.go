@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"io/ioutil"
+	"os"
 )
 
 func init() {
@@ -92,7 +93,7 @@ type handleF = func() error
 func handleError(fl ...handleF) {
 	for i, f := range fl {
 		if err := f(); err != nil {
-			log.Fatalln("index:", i, err)
+			_, _ = fmt.Fprintln(os.Stderr, "index:", i, err)
 		}
 	}
 }
