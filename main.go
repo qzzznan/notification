@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/qzzznan/notification/bark"
@@ -9,9 +10,13 @@ import (
 	"github.com/qzzznan/notification/db"
 	"github.com/qzzznan/notification/pushdeer"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"os"
+)
+
+var (
+	ip   string
+	port string
 )
 
 func init() {
@@ -23,6 +28,9 @@ func init() {
 			log.Fatalln(err)
 		}
 	*/
+	defer flag.Parse()
+	flag.StringVar(&ip, "addr", "localhost", "ip address")
+	flag.StringVar(&port, "port", "8080", "port")
 }
 
 func main() {
@@ -36,11 +44,12 @@ func main() {
 	)
 
 	var err error
-	e := gin.Default()
+	e := gin.New()
 	err = e.SetTrustedProxies(nil)
 	if err != nil {
 		log.Fatalln(err)
 	}
+	e.Use(gin.Recovery())
 	e.Use(gin.LoggerWithWriter(config.LogFile))
 
 	//e.Use(ginReqLogMiddleware)
@@ -49,9 +58,7 @@ func main() {
 	pushdeer.InitDerHandler(e)
 	bark.InitBarkHandler(e)
 
-	addr := fmt.Sprintf("%s:%s",
-		viper.GetString("ip"),
-		viper.GetString("port"))
+	addr := fmt.Sprintf("%s:%s", ip, port)
 
 	log.Infof("server start at %s", addr)
 
