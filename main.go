@@ -94,6 +94,7 @@ func handleError(fl ...handleF) {
 	for i, f := range fl {
 		if err := f(); err != nil {
 			_, _ = fmt.Fprintln(os.Stderr, "index:", i, err)
+			os.Exit(1)
 		}
 	}
 }
