@@ -15,7 +15,7 @@ const (
 
 var (
 	reopenSig = make(chan os.Signal, 1)
-	logFile   *os.File
+	LogFile   *os.File
 )
 
 func InitLogConfig() (err error) {
@@ -25,13 +25,13 @@ func InitLogConfig() (err error) {
 		return
 	}
 
-	logFile, err = os.OpenFile(logFilePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	LogFile, err = os.OpenFile(logFilePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return
 	}
 
 	log.SetLevel(log.DebugLevel)
-	log.SetOutput(logFile)
+	log.SetOutput(LogFile)
 
 	signal.Notify(reopenSig, syscall.SIGUSR1)
 
@@ -39,12 +39,12 @@ func InitLogConfig() (err error) {
 		for {
 			select {
 			case <-reopenSig:
-				_ = logFile.Close()
-				logFile, err = os.OpenFile(logFilePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+				_ = LogFile.Close()
+				LogFile, err = os.OpenFile(logFilePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 				if err != nil {
 					log.Error(err)
 				} else {
-					log.SetOutput(logFile)
+					log.SetOutput(LogFile)
 				}
 			}
 		}

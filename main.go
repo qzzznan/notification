@@ -41,6 +41,8 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	e.Use(gin.LoggerWithWriter(config.LogFile))
+
 	//e.Use(ginReqLogMiddleware)
 	//e.Use(ginBodyLogMiddleware)
 
