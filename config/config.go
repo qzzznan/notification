@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	logFilePath = `/var/log/notification.log`
+	logFilePath = `/var/log/notification/notification.log`
 	pidFilePath = `/var/run/notification.pid`
 )
 
