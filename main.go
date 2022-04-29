@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/qzzznan/notification/bark"
+	"github.com/qzzznan/notification/config"
 	"github.com/qzzznan/notification/db"
 	"github.com/qzzznan/notification/pushdeer"
 	log "github.com/sirupsen/logrus"
@@ -13,32 +14,27 @@ import (
 )
 
 func init() {
-	log.SetLevel(log.DebugLevel)
-
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath(".")
-	if err := viper.ReadInConfig(); err != nil {
-		log.Fatalln(err)
-	}
+	/*
+		viper.SetConfigName("config")
+		viper.SetConfigType("yaml")
+		viper.AddConfigPath(".")
+		if err := viper.ReadInConfig(); err != nil {
+			log.Fatalln(err)
+		}
+	*/
 }
 
 func main() {
-	err := bark.InitPushClient()
-	if err != nil {
-		log.Fatalln(err)
-	}
+	handleError(
+		config.InitLogConfig,
+		db.InitPostgresDB,
+		bark.InitPushClient,
+		func() error {
+			return pushdeer.InitPushClient("./static/c.p12")
+		},
+	)
 
-	err = pushdeer.InitPushClient("./static/c.p12")
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	err = db.InitPostgresDB()
-	if err != nil {
-		log.Fatalln(err)
-	}
-
+	var err error
 	e := gin.Default()
 	err = e.SetTrustedProxies(nil)
 	if err != nil {
@@ -89,4 +85,14 @@ func ginReqLogMiddleware(c *gin.Context) {
 	log.Debugln("Request Header:", c.Request.Header)
 	log.Debugln("Request URL:", c.Request.RequestURI)
 	log.Debugln("Request Body:", string(data))
+}
+
+type handleF = func() error
+
+func handleError(fl ...handleF) {
+	for i, f := range fl {
+		if err := f(); err != nil {
+			log.Fatalln("index:", i, err)
+		}
+	}
 }
