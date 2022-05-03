@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"github.com/gin-gonic/gin"
 	"github.com/qzzznan/notification/db"
+	"github.com/qzzznan/notification/log"
 	"github.com/qzzznan/notification/model"
 	"github.com/qzzznan/notification/util"
-	log "github.com/sirupsen/logrus"
 	"time"
 )
 

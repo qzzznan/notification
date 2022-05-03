@@ -3,9 +3,9 @@ package pushdeer
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/qzzznan/notification/db"
+	"github.com/qzzznan/notification/log"
 	"github.com/qzzznan/notification/model"
 	"github.com/qzzznan/notification/util"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 	"time"
@@ -51,7 +51,6 @@ func push(c *gin.Context) {
 	}
 
 	log.Debug("push message to ", pushKey)
-	//TODO: APNS
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0, "content": gin.H{

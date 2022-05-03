@@ -7,7 +7,7 @@ import (
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	log "github.com/sirupsen/logrus"
+	"github.com/qzzznan/notification/log"
 	"os"
 )
 

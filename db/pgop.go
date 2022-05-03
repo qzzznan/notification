@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/huandu/go-sqlbuilder"
+	"github.com/qzzznan/notification/log"
 	"github.com/qzzznan/notification/model"
-	log "github.com/sirupsen/logrus"
 	"time"
 )
 

@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/qzzznan/notification/bark"
-	"github.com/qzzznan/notification/config"
 	"github.com/qzzznan/notification/db"
+	"github.com/qzzznan/notification/log"
 	"github.com/qzzznan/notification/pushdeer"
-	log "github.com/sirupsen/logrus"
+	"io"
 	"io/ioutil"
 	"os"
 )
@@ -35,7 +35,7 @@ func init() {
 
 func main() {
 	handleError(
-		config.InitLogConfig,
+		log.InitLogConfig,
 		db.InitPostgresDB,
 		bark.InitPushClient,
 		func() error {
@@ -45,12 +45,18 @@ func main() {
 
 	var err error
 	e := gin.New()
+
+	lc := gin.LoggerConfig{}
+	log.RegisterResetLogFile(func(w io.Writer) {
+		lc.Output = w
+	})
+
+	e.Use(gin.Recovery())
+	e.Use(gin.LoggerWithConfig(lc))
 	err = e.SetTrustedProxies(nil)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	e.Use(gin.Recovery())
-	e.Use(gin.LoggerWithWriter(config.LogFile))
 
 	//e.Use(ginReqLogMiddleware)
 	//e.Use(ginBodyLogMiddleware)
@@ -102,7 +108,8 @@ type handleF = func() error
 func handleError(fl ...handleF) {
 	for i, f := range fl {
 		if err := f(); err != nil {
-			_, _ = fmt.Fprintln(os.Stderr, "index:", i, err)
+			log.Errorln("index:", i, err)
+			fmt.Println("index:", i, err)
 			os.Exit(1)
 		}
 	}

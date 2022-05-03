@@ -7,8 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt"
+	"github.com/qzzznan/notification/log"
 	"github.com/satori/go.uuid"
-	log "github.com/sirupsen/logrus"
 	"runtime"
 )
 

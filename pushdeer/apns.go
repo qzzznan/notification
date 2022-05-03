@@ -2,11 +2,11 @@ package pushdeer
 
 import (
 	"fmt"
+	"github.com/qzzznan/notification/log"
 	"github.com/qzzznan/notification/model"
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/certificate"
 	"github.com/sideshow/apns2/payload"
-	log "github.com/sirupsen/logrus"
 	"time"
 )
 

@@ -5,8 +5,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 	"github.com/qzzznan/notification/db"
+	"github.com/qzzznan/notification/log"
 	"github.com/qzzznan/notification/util"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strings"
 )

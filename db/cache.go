@@ -2,8 +2,8 @@ package db
 
 import (
 	"fmt"
+	"github.com/qzzznan/notification/log"
 	"github.com/qzzznan/notification/model"
-	log "github.com/sirupsen/logrus"
 )
 
 var barkKeyCache map[string]*model.BarkDevice
