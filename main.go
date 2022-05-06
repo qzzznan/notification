@@ -46,9 +46,12 @@ func main() {
 	var err error
 	e := gin.New()
 
-	lc := gin.LoggerConfig{}
+	lw := &log.LoggerWriter{}
+	lc := gin.LoggerConfig{
+		Output: lw,
+	}
 	log.RegisterResetLogFile(func(w io.Writer) {
-		lc.Output = w
+		lw.SetWriter(w)
 	})
 
 	e.Use(gin.Recovery())
