@@ -1,10 +1,12 @@
 set windows-powershell := true
 msg := "update"
 
-build:
-    go version
-
 push:
     git add .
     git commit -m '{{msg}}'
     git push
+
+run:
+    go build
+    kill `cat /var/run/notification.pid`
+    nohup ./notification --port 8006 >n.log 2>&1 &
