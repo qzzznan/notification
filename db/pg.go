@@ -8,15 +8,15 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/qzzznan/notification/log"
-	"os"
+	"github.com/spf13/viper"
 )
 
 var db *sqlx.DB
 
 func InitPostgresDB() error {
+	m := viper.GetStringMapString("postgres")
 	dsn := fmt.Sprintf("postgres://postgres:%s@%s/postgres?sslmode=disable",
-		os.Getenv("PG_PWD"),
-		os.Getenv("PG_URL"))
+		m["password"], m["url"])
 	log.Infoln("Connecting to Postgres:", dsn)
 	db1, err := sql.Open("postgres", dsn)
 	if err != nil {
@@ -32,6 +32,14 @@ func InitPostgresDB() error {
 			return err
 		}
 	}
+
+	if m["clear_db"] == "true" {
+		err = clearDB()
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

@@ -3,18 +3,16 @@ package log
 import (
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"io"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 )
 
-const (
-	logFilePath = `/var/log/notification/notification.log`
-	//logFilePath = `./notification.log`
-	pidFilePath = `/var/run/notification.pid`
-	//pidFilePath = `./notification.pid`
+var (
+	logFilePath string
+	pidFilePath string
 )
 
 var (
@@ -26,12 +24,18 @@ var (
 	pidFD *os.File
 )
 
-func init() {
-	changeList = make([]func(writer io.Writer), 0)
-	LockPIDFile()
-}
-
 func InitLogConfig() (err error) {
+	changeList = make([]func(writer io.Writer), 0)
+
+	m := viper.GetStringMapString("log")
+	logFilePath = m["log_file_path"]
+	pidFilePath = m["pid_file_path"]
+
+	err = lockPIDFile()
+	if err != nil {
+		return err
+	}
+
 	l = logrus.New()
 	l.SetOutput(os.Stderr)
 
@@ -40,7 +44,7 @@ func InitLogConfig() (err error) {
 		return
 	}
 
-	l.SetLevel(logrus.DebugLevel)
+	l.SetLevel(logrus.ParseLevel(m["level"]))
 	RegisterResetLogFile(func(w io.Writer) {
 		l.SetOutput(w)
 	})
@@ -60,7 +64,7 @@ func RegisterResetLogFile(handle func(w io.Writer)) {
 func handleChange() {
 	var err error
 	for range reopenSig {
-		_ = logFile.Close()
+		old := logFile
 		logFile, err = os.OpenFile(logFilePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
 			Errorln("reopen log file failed", err)
@@ -71,34 +75,30 @@ func handleChange() {
 			}
 			Println("reopen log file success")
 			fmt.Println("reopen log file success")
+			_ = old.Sync()
+			_ = old.Close()
 		}
 	}
 }
 
-func LockPIDFile() {
+func lockPIDFile() error {
 	pid := os.Getpid()
 	var err error
 	pidFD, err = os.OpenFile(pidFilePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
-		panic(fmt.Sprintf("open pid file failed: %v", err))
+		return fmt.Errorf("open pid file failed: %v", err)
+	}
+	// 建议性锁
+	err = syscall.Flock(int(pidFD.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
+	if err != nil {
+		return fmt.Errorf("lock pid file failed: %v", err)
 	}
 	_, err = pidFD.WriteString(fmt.Sprintf("%d", pid))
 	if err != nil {
-		panic(fmt.Sprintf("write pid file failed: %v", err))
+		return fmt.Errorf("write pid file failed: %v", err)
 	}
-	err = syscall.Flock(int(pidFD.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
+	err = pidFD.Sync()
 	if err != nil {
-		panic(fmt.Sprintf("lock pid file failed: %v", err))
+		return fmt.Errorf("sync pid file failed: %v", err)
 	}
-}
-
-type LoggerWriter struct {
-	io.Writer
-	sync.Mutex
-}
-
-func (l *LoggerWriter) SetWriter(w io.Writer) {
-	l.Lock()
-	defer l.Unlock()
-	l.Writer = w
 }

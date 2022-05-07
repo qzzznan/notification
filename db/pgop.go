@@ -293,14 +293,13 @@ func getBarkDevice(key, token string) (*model.BarkDevice, error) {
 	return device, err
 }
 
-func clearDB() {
+func clearDB() error {
 	var err error
-	for _, v := range []string{
-		DeviceTable, PushKeyTable, MessageTable, UserTable,
-	} {
-		_, err = db.Exec("TRUNCATE TABLE " + v)
+	for t := range TableCreateMap {
+		_, err = db.Exec("TRUNCATE TABLE " + t)
 		if err != nil {
-			log.Fatalln(err)
+			return err
 		}
 	}
+	return nil
 }

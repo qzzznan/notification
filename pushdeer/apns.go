@@ -7,6 +7,7 @@ import (
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/certificate"
 	"github.com/sideshow/apns2/payload"
+	"github.com/spf13/viper"
 	"time"
 )
 
@@ -19,7 +20,8 @@ const (
 
 var client *apns2.Client
 
-func InitPushClient(file string) error {
+func InitPushClient() error {
+	file := viper.GetString("push_deer")
 	cert, err := certificate.FromP12File(file, keyPassword)
 	if err != nil {
 		return err
