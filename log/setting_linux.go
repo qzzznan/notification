@@ -44,7 +44,13 @@ func InitLogConfig() (err error) {
 		return
 	}
 
-	l.SetLevel(logrus.ParseLevel(m["level"]))
+	var level logrus.Level
+	level, err = logrus.ParseLevel(m["level"])
+	if err != nil {
+		return err
+	}
+
+	l.SetLevel(level)
 	RegisterResetLogFile(func(w io.Writer) {
 		l.SetOutput(w)
 	})

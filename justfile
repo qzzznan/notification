@@ -2,6 +2,7 @@ set windows-powershell := true
 msg := "update"
 
 push:
+    go mod tidy
     git add .
     git commit -m '{{msg}}'
     git push
