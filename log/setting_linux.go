@@ -47,7 +47,7 @@ func InitLogConfig() (err error) {
 	var level logrus.Level
 	level, err = logrus.ParseLevel(m["level"])
 	if err != nil {
-		return err
+		return
 	}
 
 	l.SetLevel(level)
@@ -107,4 +107,5 @@ func lockPIDFile() error {
 	if err != nil {
 		return fmt.Errorf("sync pid file failed: %v", err)
 	}
+	return nil
 }
