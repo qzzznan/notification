@@ -10,4 +10,4 @@ push:
 run:
     go build
     kill `cat /var/run/notification.pid` || true
-    nohup ./notification --port 8006 >n.log 2>&1 &
+    nohup ./notification >n.log 2>&1 &
