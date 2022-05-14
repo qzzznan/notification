@@ -8,6 +8,7 @@ import (
 	"github.com/qzzznan/notification/db"
 	"github.com/qzzznan/notification/log"
 	"github.com/qzzznan/notification/pushdeer"
+	"github.com/qzzznan/notification/ws"
 	"github.com/spf13/viper"
 	"io"
 	"os"
@@ -50,6 +51,7 @@ func main() {
 
 	pushdeer.InitDerHandler(e)
 	bark.InitBarkHandler(e)
+	ws.InitWsHandler(e)
 
 	addr := viper.GetString("http.addr")
 	log.Infof("server start at %s", addr)
