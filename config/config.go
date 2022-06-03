@@ -1,52 +1,47 @@
 package config
 
 import (
-	"flag"
-	"fmt"
-	"github.com/spf13/viper"
-	"os"
+	"github.com/davecgh/go-spew/spew"
+	"github.com/ilyakaznacheev/cleanenv"
 )
 
-var (
-	configPath string
-	configName string
-	configExt  string
+type (
+	Config struct {
+		Http `yaml:"http"`
+		Log  `yaml:"log"`
+		PG   `yaml:"pg"`
+		RDB  `yaml:"rdb"`
+	}
+
+	Http struct {
+		Addr string `yaml:"addr" env:"HTTP_ADDR" env-default:"127.0.0.1:8006"`
+	}
+
+	Log struct {
+		Level string `yaml:"level" env:"LOG_LEVEL" env-default:"info"`
+	}
+
+	PG struct {
+		User     string `yaml:"user" env:"PG_USER" env-default:"postgres"`
+		Password string `yaml:"password" env:"PG_PWD" env-required:"true"`
+		URL      string `yaml:"url" env:"PG_URL"`
+		Port     string `yaml:"port" env:"PG_PORT" env-default:"5432"`
+	}
+
+	RDB struct {
+		Addr     string `yaml:"addr" env:"RDB_ADDR" env-default:"127.0.0.1:6379"`
+		Password string `yaml:"password" env:"RDB_PWD"`
+	}
 )
 
-func LoadConfig() {
-	flag.StringVar(&configPath, "p", ".", "config file path")
-	flag.StringVar(&configName, "n", "config", "config file name")
-	flag.StringVar(&configExt, "e", "yaml", "config file extension")
-	flag.Parse()
-
-	viper.SetConfigName(configName)
-	viper.SetConfigType(configExt)
-	viper.AddConfigPath(configPath)
-	viper.SetConfigPermissions(0666)
-	if err := viper.ReadInConfig(); err != nil {
-		panic(err)
+func NewConfig() (*Config, error) {
+	c := &Config{}
+	err := cleanenv.ReadConfig("config/config.yml", c)
+	if err != nil {
+		return nil, err
 	}
-
-	viper.SetDefault("http.addr", "localhost:8006")
-	viper.SetDefault("http.debug", true)
-
-	viper.SetDefault("boltdb.path", "bolt.db")
-
-	viper.SetDefault("postgres.url", os.Getenv("PG_URL"))
-	viper.SetDefault("postgres.password", os.Getenv("PG_PWD"))
-	viper.SetDefault("postgres.clear_db", false)
-
-	viper.SetDefault("redis.addr", "localhost:6379")
-
-	viper.SetDefault("log.log_file_path", "/var/log/notification/notification.log")
-	viper.SetDefault("log.pid_file_path", "/var/run/notification.pid")
-	viper.SetDefault("log.level", "debug")
-
-	viper.SetDefault("push_deer", "./static/c.p12")
-
-	fmt.Println("config ************************************")
-	for k, v := range viper.AllSettings() {
-		fmt.Printf("config key:%s value:%v\n", k, v)
+	if c.Log.Level == "debug" {
+		spew.Dump(c)
 	}
-	fmt.Println("config ************************************")
+	return c, err
 }
