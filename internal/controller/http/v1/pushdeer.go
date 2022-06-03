@@ -46,6 +46,6 @@ func newPushDeerRouter(e *gin.RouterGroup, l logger.Interface, p usecase.PushDee
 		msg.POST("/push", r.push)
 		msg.POST("/list", r.msgList)
 		msg.POST("/remove", r.msgRm)
-		msg.POST("/clean", nil)
+		msg.POST("/clean", r.clean)
 	}
 }

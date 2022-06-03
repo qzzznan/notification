@@ -23,12 +23,14 @@ func (r *pushDeerRoutes) apple(c *gin.Context) {
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
 		err := errors.New("claims is not jwt.MapClaims")
-		pdResp(c, r.l, 400, 1, err, nil)
+		r.l.Errorln(err)
+		pdResp(c, 400, 1, err, nil)
 		return
 	}
 	fields, err := GetFields(claims, "sub", "email")
 	if err != nil {
-		pdResp(c, r.l, 400, 1, err, nil)
+		r.l.Errorln(err)
+		pdResp(c, 400, 1, err, nil)
 		return
 	}
 	appleID := fields["sub"]
@@ -39,10 +41,11 @@ func (r *pushDeerRoutes) apple(c *gin.Context) {
 	}
 	uid, err := r.p.Register(c.Request.Context(), appleID, email, name)
 	if err != nil {
-		pdResp(c, r.l, 400, 1, err, nil)
+		r.l.Errorln(err)
+		pdResp(c, 400, 1, err, nil)
 		return
 	}
-	pdResp(c, r.l, 200, 0, nil, gin.H{
+	pdResp(c, 200, 0, nil, gin.H{
 		"token": uid,
 	})
 }

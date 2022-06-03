@@ -16,15 +16,17 @@ var _ usecase.PushDeerWebAPI = (*PushDeerAPNsAPI)(nil)
 
 type PushDeerAPNsAPI struct {
 	Client *apns2.Client
+	l      logger.Interface
 }
 
-func NewPushDeerAPNs() (*PushDeerAPNsAPI, error) {
+func NewPushDeerAPNs(l logger.Interface) (*PushDeerAPNsAPI, error) {
 	cert, err := certificate.FromP12File("assets/c.p12", pdKeyPassword)
 	if err != nil {
 		return nil, err
 	}
 	return &PushDeerAPNsAPI{
 		Client: apns2.NewClient(cert).Production(),
+		l:      l,
 	}, nil
 }
 
@@ -47,15 +49,7 @@ func (api *PushDeerAPNsAPI) Push(ctx context.Context, devices []*entity.Device, 
 			return fmt.Errorf("push message to device %d failed: %s", v.ID, err)
 		}
 
-		api.logAPNsResult(ctx, res)
+		api.l.Infoln("push result", res)
 	}
 	return nil
-}
-
-func (api *PushDeerAPNsAPI) logAPNsResult(ctx context.Context, res *apns2.Response) {
-	if l := ctx.Value("logger"); l != nil {
-		if log, ok := l.(logger.Interface); ok {
-			log.Infoln("push result:", res)
-		}
-	}
 }

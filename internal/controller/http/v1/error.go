@@ -2,8 +2,6 @@ package v1
 
 import (
 	"github.com/gin-gonic/gin"
-	"notification/pkg/logger"
-	"runtime"
 	"time"
 )
 
@@ -19,11 +17,7 @@ func barkResp(c *gin.Context, code int, msg string, data interface{}) {
 	c.JSON(code, h)
 }
 
-func pdResp(c *gin.Context, l logger.Interface, state, code int, err error, content interface{}) {
-	if err != nil {
-		_, fl, ln, _ := runtime.Caller(1)
-		l.Errorf("%s:%d %s\n", fl, ln, err.Error())
-	}
+func pdResp(c *gin.Context, state, code int, err error, content interface{}) {
 	m := gin.H{
 		"code": code,
 	}

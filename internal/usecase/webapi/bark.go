@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"notification/internal/entity"
 	"notification/internal/usecase"
+	"notification/pkg/logger"
 	"strings"
 	"time"
 )
@@ -21,9 +22,10 @@ var _ usecase.BarkWebAPI = (*BarkAPNsAPI)(nil)
 
 type BarkAPNsAPI struct {
 	Client *apns2.Client
+	l      logger.Interface
 }
 
-func NewBarkAPNs() (*BarkAPNsAPI, error) {
+func NewBarkAPNs(l logger.Interface) (*BarkAPNsAPI, error) {
 	key, err := token.AuthKeyFromBytes([]byte(apnsPrivateKey))
 	if err != nil {
 		return nil, err
@@ -55,7 +57,7 @@ func NewBarkAPNs() (*BarkAPNsAPI, error) {
 		},
 		Host: apns2.HostProduction,
 	}
-	return &BarkAPNsAPI{client}, nil
+	return &BarkAPNsAPI{client, l}, nil
 }
 
 func (api *BarkAPNsAPI) Push(ctx context.Context, msg *entity.APNsMessage) error {

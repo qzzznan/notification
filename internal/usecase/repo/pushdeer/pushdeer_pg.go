@@ -7,7 +7,7 @@ import (
 	"github.com/Masterminds/squirrel"
 	"notification/internal/entity"
 	"notification/internal/usecase"
-	"notification/internal/usecase/repo"
+	"notification/pkg/logger"
 	"notification/pkg/postgres"
 	"strconv"
 	"time"
@@ -24,10 +24,11 @@ const (
 
 type Repo struct {
 	p *postgres.Postgres
+	l logger.Interface
 }
 
-func New(pg *postgres.Postgres) *Repo {
-	return &Repo{pg}
+func New(pg *postgres.Postgres, l logger.Interface) *Repo {
+	return &Repo{pg, l}
 }
 
 func (r *Repo) GetUserID(ctx context.Context, token string) (string, error) {
@@ -49,7 +50,7 @@ func (r *Repo) StoreUser(ctx context.Context, appleID, email, name, uuid string)
 		return err
 	}
 
-	repo.LogSQL(ctx, sql, args...)
+	r.l.Infoln(sql, args)
 
 	_, err = r.p.X.ExecContext(ctx, sql, args...)
 	return err
@@ -62,17 +63,15 @@ func (r *Repo) GetUser(ctx context.Context, uuid, appleID string) (*entity.User,
 		Select("id", "apple_id", "email", "name", "uuid", "created_at").
 		From(UserTable)
 	if uuid != "" {
-		err := r.p.GetCache(ctx, uuid, user)
-		if err != nil {
-			repo.LogCacheError(ctx, err)
+		if err := r.p.GetCache(ctx, uuid, user); err != nil && !errors.Is(err, postgres.ErrNotSetCache) {
+			r.l.Errorln(err)
 		} else {
 			return user, nil
 		}
 		b = b.Where(squirrel.Eq{"uuid": uuid})
 	} else if appleID != "" {
-		err := r.p.GetCache(ctx, appleID, user)
-		if err != nil {
-			repo.LogCacheError(ctx, err)
+		if err := r.p.GetCache(ctx, appleID, user); err != nil && !errors.Is(err, postgres.ErrNotSetCache) {
+			r.l.Errorln(err)
 		} else {
 			return user, nil
 		}
@@ -85,15 +84,19 @@ func (r *Repo) GetUser(ctx context.Context, uuid, appleID string) (*entity.User,
 		return nil, err
 	}
 
-	repo.LogSQL(ctx, str, args...)
+	r.l.Infoln(str, args)
 
 	err = r.p.X.GetContext(ctx, user, str, args...)
 	if err != nil {
 		return nil, err
 	}
 
-	repo.LogCacheError(ctx, r.p.SetCache(ctx, uuid, user))
-	repo.LogCacheError(ctx, r.p.SetCache(ctx, appleID, user))
+	if err = r.p.SetCache(ctx, uuid, user); err != nil && !errors.Is(err, postgres.ErrNotSetCache) {
+		r.l.Errorln(err)
+	}
+	if err = r.p.SetCache(ctx, appleID, user); err != nil && !errors.Is(err, postgres.ErrNotSetCache) {
+		r.l.Errorln(err)
+	}
 
 	return user, nil
 }
@@ -110,16 +113,21 @@ func (r *Repo) StoreDevice(ctx context.Context, device *entity.Device) error {
 		return err
 	}
 
-	repo.LogSQL(ctx, sql, args...)
+	r.l.Infoln(sql, args)
 
 	_, err = r.p.X.ExecContext(ctx, sql, args...)
 	if err != nil {
 		return err
 	}
 
-	repo.LogCacheError(ctx, r.p.SetCache(ctx, device.DeviceID, device))
+	if err = r.p.SetCache(ctx, device.DeviceID, device); err != nil && !errors.Is(err, postgres.ErrNotSetCache) {
+		r.l.Errorln(err)
+	}
+
 	err = r.p.AddListCache(ctx, r.userDeviceCacheKey(device.UserID), device.DeviceID)
-	repo.LogCacheError(ctx, err)
+	if err != nil && !errors.Is(err, postgres.ErrNotSetCache) {
+		r.l.Errorln(err)
+	}
 
 	return nil
 }
@@ -130,9 +138,9 @@ func (r *Repo) userDeviceCacheKey(key string) string {
 
 func (r *Repo) GetDevice(ctx context.Context, deviceID string) (*entity.Device, error) {
 	device := &entity.Device{}
-	err := r.p.GetCache(ctx, deviceID, device)
-	if err != nil {
-		repo.LogCacheError(ctx, err)
+
+	if err := r.p.GetCache(ctx, deviceID, device); err != nil && !errors.Is(err, postgres.ErrNotSetCache) {
+		r.l.Errorln(err)
 	}
 
 	sql, args, err := r.p.Builder.Select("device_id", "user_id", "type", "is_clip", "name", "created_at", "updated_at").
@@ -143,15 +151,21 @@ func (r *Repo) GetDevice(ctx context.Context, deviceID string) (*entity.Device, 
 		return nil, err
 	}
 
-	repo.LogSQL(ctx, sql, args...)
+	r.l.Infoln(sql, args)
 
 	err = r.p.X.GetContext(ctx, device, sql, args...)
 	if err != nil {
 		return nil, err
 	}
 
-	repo.LogCacheError(ctx, r.p.SetCache(ctx, deviceID, device))
-	repo.LogCacheError(ctx, r.p.AddListCache(ctx, r.userDeviceCacheKey(device.UserID), deviceID))
+	err = r.p.SetCache(ctx, deviceID, device)
+	if err != nil && !errors.Is(err, postgres.ErrNotSetCache) {
+		r.l.Errorln(err)
+	}
+	err = r.p.AddListCache(ctx, r.userDeviceCacheKey(device.UserID), deviceID)
+	if err != nil && !errors.Is(err, postgres.ErrNotSetCache) {
+		r.l.Errorln(err)
+	}
 
 	return device, nil
 }
@@ -160,14 +174,13 @@ func (r *Repo) GetAllDevice(ctx context.Context, userID string) ([]*entity.Devic
 	devices := make([]*entity.Device, 0)
 	deviceIDList := make([]string, 0)
 	err := r.p.GetCache(ctx, r.userDeviceCacheKey(userID), &deviceIDList)
-	if err != nil {
-		repo.LogCacheError(ctx, err)
+	if err != nil && !errors.Is(err, postgres.ErrNotSetCache) {
+		r.l.Errorln(err)
 	} else {
 		for _, v := range deviceIDList {
 			item := new(entity.Device)
-			err = r.p.GetCache(ctx, v, item)
-			if err != nil {
-				repo.LogCacheError(ctx, err)
+			if err = r.p.GetCache(ctx, v, item); err != nil && !errors.Is(err, postgres.ErrNotSetCache) {
+				r.l.Errorln(err)
 				break
 			}
 			devices = append(devices, item)
@@ -183,6 +196,8 @@ func (r *Repo) GetAllDevice(ctx context.Context, userID string) ([]*entity.Devic
 	if err != nil {
 		return nil, err
 	}
+
+	r.l.Infoln(sql, args)
 
 	err = r.p.X.SelectContext(ctx, &devices, sql, args...)
 	if err != nil {
@@ -200,7 +215,7 @@ func (r *Repo) UpdateDeviceName(ctx context.Context, deviceID, name string) erro
 		return err
 	}
 
-	repo.LogSQL(ctx, sql, args...)
+	r.l.Infoln(sql, args)
 
 	_, err = r.p.X.ExecContext(ctx, sql, args...)
 	return err
@@ -214,7 +229,7 @@ func (r *Repo) RemoveDevice(ctx context.Context, s string) error {
 		return err
 	}
 
-	repo.LogSQL(ctx, query, args...)
+	r.l.Infoln(query, args)
 
 	_, err = r.p.X.ExecContext(ctx, query, args...)
 	return err
@@ -231,7 +246,7 @@ func (r *Repo) StorePushKey(ctx context.Context, key *entity.PushKey) error {
 		return err
 	}
 
-	repo.LogSQL(ctx, query, args...)
+	r.l.Infoln(query, args)
 
 	_, err = r.p.X.ExecContext(ctx, query, args...)
 	return err
@@ -256,7 +271,7 @@ func (r *Repo) GetPushKey(ctx context.Context, id int64, name string, pushKey st
 		return nil, err
 	}
 
-	repo.LogSQL(ctx, query, args...)
+	r.l.Infoln(query, args)
 
 	key := &entity.PushKey{}
 	err = r.p.X.GetContext(ctx, key, query, args...)
@@ -274,7 +289,7 @@ func (r *Repo) GetAllPushKey(ctx context.Context, s string) ([]*entity.PushKey, 
 		return nil, err
 	}
 
-	repo.LogSQL(ctx, query, args...)
+	r.l.Infoln(query, args)
 
 	list := make([]*entity.PushKey, 0)
 	return list, r.p.X.SelectContext(ctx, &list, query, args...)
@@ -293,7 +308,7 @@ func (r *Repo) UpdatePushKey(ctx context.Context, key *entity.PushKey) error {
 		return err
 	}
 
-	repo.LogSQL(ctx, query, args...)
+	r.l.Infoln(query, args)
 
 	_, err = r.p.X.ExecContext(ctx, query, args...)
 	return err
@@ -307,7 +322,7 @@ func (r *Repo) RemovePushKey(ctx context.Context, s string) error {
 		return err
 	}
 
-	repo.LogSQL(ctx, query, args...)
+	r.l.Infoln(query, args)
 
 	_, err = r.p.X.ExecContext(ctx, query, args...)
 	return err
@@ -323,7 +338,7 @@ func (r *Repo) StoreMessage(ctx context.Context, m *entity.Message) error {
 		return err
 	}
 
-	repo.LogSQL(ctx, query, args...)
+	r.l.Infoln(query, args)
 
 	_, err = r.p.X.ExecContext(ctx, query, args...)
 	return err
@@ -340,7 +355,7 @@ func (r *Repo) GetMessage(ctx context.Context, userID string, offset, count uint
 		return nil, err
 	}
 
-	repo.LogSQL(ctx, query, args...)
+	r.l.Infoln(query, args)
 
 	list := make([]*entity.Message, 0)
 	return list, r.p.X.SelectContext(ctx, &list, query, args...)
@@ -354,7 +369,7 @@ func (r *Repo) RemoveMessage(ctx context.Context, s string) error {
 		return err
 	}
 
-	repo.LogSQL(ctx, query, args...)
+	r.l.Infoln(query, args)
 
 	_, err = r.p.X.ExecContext(ctx, query, args...)
 	return err

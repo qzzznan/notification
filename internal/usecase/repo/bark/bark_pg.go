@@ -2,11 +2,12 @@ package bark
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/Masterminds/squirrel"
 	"notification/internal/entity"
 	"notification/internal/usecase"
-	"notification/internal/usecase/repo"
+	"notification/pkg/logger"
 	"notification/pkg/postgres"
 )
 
@@ -16,10 +17,11 @@ const DeviceTable = "t_bark_device"
 
 type Repo struct {
 	p *postgres.Postgres
+	l logger.Interface
 }
 
-func New(p *postgres.Postgres) *Repo {
-	return &Repo{p}
+func New(p *postgres.Postgres, l logger.Interface) *Repo {
+	return &Repo{p, l}
 }
 
 func (r *Repo) Store(ctx context.Context, device *entity.BarkDevice) error {
@@ -36,15 +38,20 @@ func (r *Repo) Store(ctx context.Context, device *entity.BarkDevice) error {
 		return err
 	}
 
-	repo.LogSQL(ctx, sql, args...)
+	r.l.Infoln(sql, args)
 
 	_, err = r.p.X.ExecContext(ctx, sql, args...)
 	if err != nil {
 		return err
 	}
 
-	repo.LogCacheError(ctx, r.p.SetCache(ctx, device.DeviceToken, device))
-	repo.LogCacheError(ctx, r.p.SetCache(ctx, device.DeviceKey, device))
+	if err = r.p.SetCache(ctx, device.DeviceToken, device); err != nil && !errors.Is(err, postgres.ErrNotSetCache) {
+		r.l.Errorln(err)
+	}
+
+	if err = r.p.SetCache(ctx, device.DeviceKey, device); err != nil && !errors.Is(err, postgres.ErrNotSetCache) {
+		r.l.Errorln(err)
+	}
 
 	return nil
 }
@@ -56,17 +63,15 @@ func (r *Repo) Get(ctx context.Context, device *entity.BarkDevice) (*entity.Bark
 
 	obj := &entity.BarkDevice{}
 	if device.DeviceToken != "" {
-		err := r.p.GetCache(ctx, device.DeviceToken, obj)
-		if err != nil {
-			repo.LogCacheError(ctx, err)
+		if err := r.p.GetCache(ctx, device.DeviceToken, obj); err != nil && !errors.Is(err, postgres.ErrNotSetCache) {
+			r.l.Errorln(err)
 		} else {
 			return obj, nil
 		}
 		b = b.Where(squirrel.Eq{"device_token": device.DeviceToken})
 	} else if device.DeviceKey != "" {
-		err := r.p.GetCache(ctx, device.DeviceKey, obj)
-		if err != nil {
-			repo.LogCacheError(ctx, err)
+		if err := r.p.GetCache(ctx, device.DeviceKey, obj); err != nil && !errors.Is(err, postgres.ErrNotSetCache) {
+			r.l.Errorln(err)
 		} else {
 			return obj, nil
 		}
@@ -80,7 +85,7 @@ func (r *Repo) Get(ctx context.Context, device *entity.BarkDevice) (*entity.Bark
 		return nil, err
 	}
 
-	repo.LogSQL(ctx, sql, args...)
+	r.l.Infoln(sql, args)
 
 	err = r.p.X.GetContext(ctx, obj, sql, args...)
 	return obj, err

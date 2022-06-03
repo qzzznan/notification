@@ -22,7 +22,8 @@ func (r *pushDeerRoutes) push(c *gin.Context) {
 	})
 
 	if err != nil {
-		pdResp(c, r.l, 400, 1, err, nil)
+		r.l.Errorln(err)
+		pdResp(c, 400, 1, err, nil)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -45,10 +46,11 @@ func (r *pushDeerRoutes) msgList(c *gin.Context) {
 	ctx := c.Request.Context()
 	msg, err := r.p.GetMessage(ctx, token, 0, uint64(lim))
 	if err != nil {
-		pdResp(c, r.l, 400, 1, err, nil)
+		r.l.Errorln(err)
+		pdResp(c, 400, 1, err, nil)
 		return
 	}
-	pdResp(c, r.l, 200, 0, nil, gin.H{
+	pdResp(c, 200, 0, nil, gin.H{
 		"messages": msg,
 	})
 }
@@ -60,11 +62,16 @@ func (r *pushDeerRoutes) msgRm(c *gin.Context) {
 	ctx := c.Request.Context()
 	err := r.p.RemoveMessage(ctx, token, msgID)
 	if err != nil {
-		pdResp(c, r.l, 400, 1, err, nil)
+		r.l.Errorln(err)
+		pdResp(c, 400, 1, err, nil)
 		return
 	}
 
-	pdResp(c, r.l, 200, 0, nil, gin.H{
+	pdResp(c, 200, 0, nil, gin.H{
 		"message": "done",
 	})
+}
+
+func (r *pushDeerRoutes) clean(c *gin.Context) {
+	r.l.Errorln("not implemented")
 }

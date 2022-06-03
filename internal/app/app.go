@@ -49,18 +49,18 @@ func Run(cfg *config.Config) {
 	defer pg.Close()
 	// **** db
 
-	barkApns, err := webapi.NewBarkAPNs()
+	barkApns, err := webapi.NewBarkAPNs(l)
 	if err != nil {
 		l.Fatalln(err)
 	}
-	pdApns, err := webapi.NewPushDeerAPNs()
+	pdApns, err := webapi.NewPushDeerAPNs(l)
 	if err != nil {
 		l.Fatalln(err)
 	}
 
 	// **** service
-	barkUseCase := usecase.NewBark(bark.New(pg), barkApns)
-	pushDeerUseCase := usecase.NewPushDeer(pushdeer.New(pg), pdApns)
+	barkUseCase := usecase.NewBark(bark.New(pg, l), barkApns)
+	pushDeerUseCase := usecase.NewPushDeer(pushdeer.New(pg, l), pdApns)
 	// **** service
 
 	e := gin.New()
@@ -79,10 +79,10 @@ func Run(cfg *config.Config) {
 
 	select {
 	case s := <-sig:
-		_ = s
+		l.Warningln("signal received:", s)
 
 	case s := <-httpServer.Notify():
-		_ = s
+		l.Warningln("server notify:", s)
 	}
 
 	err = httpServer.Shutdown()
