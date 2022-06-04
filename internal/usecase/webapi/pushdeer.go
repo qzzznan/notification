@@ -3,6 +3,7 @@ package webapi
 import (
 	"context"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/certificate"
 	"github.com/sideshow/apns2/payload"
@@ -17,6 +18,7 @@ var _ usecase.PushDeerWebAPI = (*PushDeerAPNsAPI)(nil)
 type PushDeerAPNsAPI struct {
 	Client *apns2.Client
 	l      logger.Interface
+	wsConn map[string]*websocket.Conn
 }
 
 func NewPushDeerAPNs(l logger.Interface) (*PushDeerAPNsAPI, error) {
@@ -27,6 +29,7 @@ func NewPushDeerAPNs(l logger.Interface) (*PushDeerAPNsAPI, error) {
 	return &PushDeerAPNsAPI{
 		Client: apns2.NewClient(cert).Production(),
 		l:      l,
+		wsConn: make(map[string]*websocket.Conn),
 	}, nil
 }
 
@@ -42,14 +45,42 @@ func (api *PushDeerAPNsAPI) Push(ctx context.Context, devices []*entity.Device, 
 		Expiration: time.Now().Add(time.Hour * 24),
 		Payload:    pl.MutableContent(),
 	}
-	for _, v := range devices {
-		notification.DeviceToken = v.DeviceID
-		res, err := api.Client.Push(notification)
-		if err != nil {
-			return fmt.Errorf("push message to device %d failed: %s", v.ID, err)
-		}
 
-		api.l.Infoln("push result", res)
+	var err error
+	for _, v := range devices {
+		if v.Type == "ios" {
+			notification.DeviceToken = v.DeviceID
+			err = api.apns(ctx, notification)
+		} else {
+			err = api.ws(ctx, v.DeviceID)
+		}
+		if err != nil {
+			return fmt.Errorf("push message to %d [%s] failed: %s", v.ID, v.Type, err.Error())
+		}
 	}
 	return nil
+}
+
+func (api *PushDeerAPNsAPI) ws(ctx context.Context, deviceId string) error {
+	c, ok := api.wsConn[deviceId]
+	if !ok {
+		return nil
+	}
+	return c.WriteJSON(map[string]interface{}{
+		"message": "ok",
+		"state":   "todo",
+	})
+}
+
+func (api *PushDeerAPNsAPI) apns(ctx context.Context, n *apns2.Notification) error {
+	res, err := api.Client.Push(n)
+	if err != nil {
+		return err
+	}
+	api.l.Infoln("push result", res)
+	return nil
+}
+
+func (api *PushDeerAPNsAPI) Register(ctx context.Context, key string, c *websocket.Conn) {
+	api.wsConn[key] = c
 }

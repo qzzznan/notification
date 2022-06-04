@@ -87,3 +87,14 @@ func (r *pushDeerRoutes) remove(c *gin.Context) {
 		"message": "done",
 	})
 }
+
+func (r *pushDeerRoutes) upgrade(c *gin.Context) {
+	ctx := c.Request.Context()
+	deviceID := c.Query("device_id")
+	err := r.p.Upgrade(ctx, deviceID, c.Writer, c.Request, nil)
+	if err != nil {
+		r.l.Errorln(err)
+		pdResp(c, 400, 1, err, nil)
+		return
+	}
+}

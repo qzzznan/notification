@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"github.com/gorilla/websocket"
+	"net/http"
 	"notification/internal/entity"
 )
 
@@ -43,6 +45,8 @@ type (
 		RegenKey(ctx context.Context, token, id string) error
 		GetAllKey(ctx context.Context, token string) ([]*entity.PushKey, error)
 		RemoveKey(ctx context.Context, token, id string) error
+
+		Upgrade(ctx context.Context, deviceID string, w http.ResponseWriter, r *http.Request, h http.Header) error
 	}
 
 	PushDeerRepo interface {
@@ -69,5 +73,6 @@ type (
 
 	PushDeerWebAPI interface {
 		Push(context.Context, []*entity.Device, *entity.Message) error
+		Register(ctx context.Context, key string, c *websocket.Conn)
 	}
 )

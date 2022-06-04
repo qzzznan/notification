@@ -32,6 +32,7 @@ func newPushDeerRouter(e *gin.RouterGroup, l logger.Interface, p usecase.PushDee
 		device.POST("/list", r.list)
 		device.POST("/rename", r.rename)
 		device.POST("/remove", r.remove)
+		device.POST("/upgrade", r.upgrade)
 	}
 	{
 		key := g.Group("/key")

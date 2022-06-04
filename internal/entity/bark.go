@@ -13,6 +13,7 @@ type RegInfo struct {
 	Name     string `form:"name" validate:"required"`
 	DeviceID string `form:"device_id" validate:"required"`
 	IsClip   int    `form:"is_clip"`
+	Type     string `form:"Type"`
 }
 
 type APNsMessage struct {
